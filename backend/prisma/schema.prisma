@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Municipio {
+  id        Int    @id @default(autoincrement())
+  codigo    String @unique
+  nome      String
+  uf        String @default("SP")
+  perfis    EleitoradoPerfil[]
+}
+
+model FaixaEtaria {
+  id        Int    @id @default(autoincrement())
+  codigo    String @unique
+  descricao String
+  perfis    EleitoradoPerfil[]
+}
+
+model Escolaridade {
+  id        Int    @id @default(autoincrement())
+  codigo    String @unique
+  descricao String
+  perfis    EleitoradoPerfil[]
+}
+
+model EleitoradoPerfil {
+  id            Int          @id @default(autoincrement())
+  municipio     Municipio    @relation(fields: [municipioId], references: [id])
+  municipioId   Int
+  faixaEtaria   FaixaEtaria  @relation(fields: [faixaEtariaId], references: [id])
+  faixaEtariaId Int
+  escolaridade  Escolaridade @relation(fields: [escolaridadeId], references: [id])
+  escolaridadeId Int
+  genero        String
+  quantidade    Int
+
+  @@index([municipioId])
+  @@index([faixaEtariaId])
+  @@index([escolaridadeId])
+  @@index([genero])
+}

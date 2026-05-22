@@ -1,0 +1,20 @@
+{
+  "name": "eleitosp-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "etl": "node etl/load.js",
+    "test": "echo 'sem testes ainda' && exit 0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "cors": "^2.8.6",
+    "csv-parse": "^6.2.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "iconv-lite": "^0.7.2",
+    "prisma": "^5.22.0"
+  }
+}
