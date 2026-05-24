@@ -3,8 +3,13 @@
  *
  * Carrega os dados públicos do TSE (Tribunal Superior Eleitoral) sobre o
  * perfil demográfico do eleitorado de todos os estados brasileiros no banco
- * PostgreSQL. Mantém a granularidade original por zona eleitoral, permitindo
- * comparações entre estados e entre municípios.
+ * PostgreSQL.
+ *
+ * O CSV do TSE tem 11 dimensões por linha (incluindo cor/raça, estado civil,
+ * identidade de gênero, etc.). O schema armazena 5: municipio, zona, faixa
+ * etária, escolaridade e gênero. As 6 dimensões não armazenadas são somadas
+ * durante a fase de agregação, garantindo que as quantidades no banco
+ * representem o total real de eleitores — não apenas um sub-grupo.
  *
  * Referências bibliográficas:
  *   KIMBALL, R.; ROSS, M. The Data Warehouse Toolkit. 3. ed. Wiley, 2013.
@@ -25,8 +30,8 @@ import { PrismaClient }     from '@prisma/client'
 // ─── CONFIGURAÇÃO ────────────────────────────────────────────────────────────
 
 const CSV_PATH   = '/data/eleitorado.csv'
-const BATCH_SIZE = 1000    // registros por round-trip ao banco
-const LOG_STEP   = 50_000  // frequência de log (arquivo tem 10,8 M de linhas)
+const BATCH_SIZE = 1000
+const LOG_STEP   = 500_000
 
 /**
  * Mapeamento de códigos de gênero do TSE para valores semânticos.
@@ -51,8 +56,7 @@ const prisma = new PrismaClient()
  * do Node.js Streams.
  *
  * Separação das fases Extract, Transform e Load — padrão consolidado na
- * literatura de data warehousing (KIMBALL; ROSS, 2013). Esta função
- * representa exclusivamente a fase Extract.
+ * literatura de data warehousing (KIMBALL; ROSS, 2013).
  */
 function extractStream() {
   const fileStream = createReadStream(CSV_PATH)
@@ -66,11 +70,11 @@ function extractStream() {
 
   const parser = parse({
     delimiter: ';',
-    columns: true,           // usa a primeira linha como nomes de colunas
+    columns: true,
     trim: true,
     quote: '"',
     skip_empty_lines: true,
-    cast: false,             // mantém tudo como string; conversão no Transform
+    cast: false,
   })
 
   return fileStream.pipe(decoder).pipe(parser)
@@ -82,10 +86,8 @@ function extractStream() {
  * Valida e normaliza uma linha do CSV.
  *
  * Data cleansing: etapa de limpeza de dados — essencial para garantir
- * qualidade dos dados carregados (RAHM; DO, 2000). Linhas com campos
- * obrigatórios ausentes ou inválidos são descartadas com log de aviso.
+ * qualidade dos dados carregados (RAHM; DO, 2000).
  *
- * @param {Object} row - Objeto com as colunas do CSV como propriedades
  * @returns {Object|null} Objeto normalizado ou null se a linha for inválida
  */
 function transformRow(row) {
@@ -100,7 +102,6 @@ function transformRow(row) {
   const generoCodigo       = row['CD_GENERO']?.trim()
   const qtRaw              = row['QT_ELEITORES']?.trim()
 
-  // Validação de campos obrigatórios
   if (!uf || !municipioCodigo || !zona || !faixaCodigo ||
       !escolaridadeCodigo || !generoCodigo || !qtRaw) {
     return null
@@ -116,7 +117,6 @@ function transformRow(row) {
   const genero = GENERO_MAP[generoCodigo] ?? 'NI'
 
   return {
-    uf,
     municipio:    { codigo: municipioCodigo, nome: municipioNome ?? municipioCodigo, uf },
     faixaEtaria:  { codigo: faixaCodigo,     descricao: faixaDescricao ?? faixaCodigo },
     escolaridade: { codigo: escolaridadeCodigo, descricao: escolaridadeDesc ?? escolaridadeCodigo },
@@ -157,9 +157,9 @@ async function run() {
   console.log('║          EleitoSP — ETL iniciado             ║')
   console.log('╚══════════════════════════════════════════════╝')
   console.log(`Arquivo : ${CSV_PATH}`)
-  console.log(`Escopo  : todos os estados (sem filtro de UF)`)
+  console.log(`Escopo  : todos os estados`)
   console.log(`Batch   : ${BATCH_SIZE} registros por inserção`)
-  console.log(`Log     : a cada ${LOG_STEP.toLocaleString()} linhas lidas\n`)
+  console.log(`\nFase 1/3 — Lendo e agregando CSV...\n`)
 
   const metrics = {
     lidas:    0,
@@ -168,113 +168,167 @@ async function run() {
     warnings: [],
   }
 
+  let municipioCache    = new Map()
+  let faixaEtariaCache  = new Map()
+  let escolaridadeCache = new Map()
+
   /**
-   * Caches em memória para as tabelas de dimensão.
+   * Mapa de agregação em memória — chave = dimensões armazenadas no schema.
    *
-   * Upsert nas dimensões (idempotência): o script pode ser executado
-   * múltiplas vezes sem criar registros duplicados. Princípio descrito em
-   * KLEPPMANN (2017) como característica essencial de pipelines confiáveis.
+   * O CSV do TSE tem uma linha por combinação de TODAS as 11 dimensões
+   * (incluindo cor/raça, estado civil, etc.). O schema armazena apenas 5:
+   * municipio, zona, faixa_etaria, escolaridade e genero.
    *
-   * Os caches reduzem chamadas ao banco de O(n) para O(d), onde d é o
-   * número de dimensões únicas: ~5.570 municípios, 24 faixas, 9 escolaridades.
+   * A chave de agregação inclui a zona eleitoral, preservando a
+   * granularidade por zona para comparações entre municípios e estados,
+   * mas somando as 6 dimensões não armazenadas (cor/raça, estado civil,
+   * identidade de gênero, quilombola, intérprete de libras e
+   * obrigatoriedade de voto).
+   *
+   * Separação das fases Extract, Transform e Load — padrão consolidado na
+   * literatura de data warehousing (KIMBALL; ROSS, 2013). A agregação em
+   * memória é parte da fase Transform: garante que as quantidades no banco
+   * representem o total real de eleitores por combinação das 5 dimensões.
+   *
+   * Espaço em memória: ~1,67M combinações únicas × ~150 bytes ≈ 250 MB.
    */
-  const municipioCache    = new Map()  // codigo → id
-  const faixaEtariaCache  = new Map()  // codigo → id
-  const escolaridadeCache = new Map()  // codigo → id
+  const agregacao     = new Map()  // chave composta → { dados, quantidade }
+  const municipios    = new Map()  // codigo → { codigo, nome, uf }
+  const faixasEtarias = new Map()  // codigo → { codigo, descricao }
+  const escolaridades = new Map()  // codigo → { codigo, descricao }
 
   try {
-    console.log('Iniciando leitura e carga...\n')
 
+    // ── FASE 1: EXTRACT + TRANSFORM + AGGREGATE ──────────────────────────
     const parser = extractStream()
-    let batch = []
 
     for await (const row of parser) {
       metrics.lidas++
 
-      const transformed = transformRow(row)
+      const t = transformRow(row)
 
-      if (!transformed) {
+      if (!t) {
         metrics.puladas++
         if (metrics.warnings.length < 20) {
           metrics.warnings.push(
             `Linha ${metrics.lidas}: campo ausente/inválido — ` +
-            `UF=${row['SG_UF']} CD_MUNICIPIO=${row['CD_MUNICIPIO']} QT_ELEITORES=${row['QT_ELEITORES']}`
+            `UF=${row['SG_UF']} CD_MUNICIPIO=${row['CD_MUNICIPIO']} QT=${row['QT_ELEITORES']}`
           )
         }
         continue
       }
 
-      const { municipio, faixaEtaria, escolaridade, zona, genero, quantidade } = transformed
+      // Coleta dimensões únicas para upsert na Fase 2
+      if (!municipios.has(t.municipio.codigo))
+        municipios.set(t.municipio.codigo, t.municipio)
+      if (!faixasEtarias.has(t.faixaEtaria.codigo))
+        faixasEtarias.set(t.faixaEtaria.codigo, t.faixaEtaria)
+      if (!escolaridades.has(t.escolaridade.codigo))
+        escolaridades.set(t.escolaridade.codigo, t.escolaridade)
 
-      // ── Upsert de dimensões com cache ───────────────────────────────────
-      //
-      // Upsert nas dimensões (idempotência): o upsert garante que múltiplas
-      // execuções do ETL não gerem duplicatas. O cache em memória evita
-      // chamadas repetidas ao banco para os mesmos códigos — a grande maioria
-      // das linhas do CSV reutiliza as mesmas dimensões já cacheadas.
-
-      if (!municipioCache.has(municipio.codigo)) {
-        const r = await prisma.municipio.upsert({
-          where:  { codigo: municipio.codigo },
-          update: { nome: municipio.nome, uf: municipio.uf },
-          create: { codigo: municipio.codigo, nome: municipio.nome, uf: municipio.uf },
-          select: { id: true },
+      /**
+       * Chave de agregação: inclui zona para preservar granularidade
+       * por zona eleitoral, mas exclui as 6 dimensões não armazenadas
+       * (cor/raça, estado civil, etc.) — cujas quantidades são somadas.
+       */
+      const key = `${t.municipio.codigo}|${t.zona}|${t.faixaEtaria.codigo}|${t.escolaridade.codigo}|${t.genero}`
+      const existing = agregacao.get(key)
+      if (existing) {
+        existing.quantidade += t.quantidade
+      } else {
+        agregacao.set(key, {
+          municipio:   t.municipio,
+          faixaEtaria: t.faixaEtaria,
+          escolaridade: t.escolaridade,
+          zona:        t.zona,
+          genero:      t.genero,
+          quantidade:  t.quantidade,
         })
-        municipioCache.set(municipio.codigo, r.id)
-      }
-
-      if (!faixaEtariaCache.has(faixaEtaria.codigo)) {
-        const r = await prisma.faixaEtaria.upsert({
-          where:  { codigo: faixaEtaria.codigo },
-          update: { descricao: faixaEtaria.descricao },
-          create: { codigo: faixaEtaria.codigo, descricao: faixaEtaria.descricao },
-          select: { id: true },
-        })
-        faixaEtariaCache.set(faixaEtaria.codigo, r.id)
-      }
-
-      if (!escolaridadeCache.has(escolaridade.codigo)) {
-        const r = await prisma.escolaridade.upsert({
-          where:  { codigo: escolaridade.codigo },
-          update: { descricao: escolaridade.descricao },
-          create: { codigo: escolaridade.codigo, descricao: escolaridade.descricao },
-          select: { id: true },
-        })
-        escolaridadeCache.set(escolaridade.codigo, r.id)
-      }
-
-      batch.push({
-        municipioId:    municipioCache.get(municipio.codigo),
-        faixaEtariaId:  faixaEtariaCache.get(faixaEtaria.codigo),
-        escolaridadeId: escolaridadeCache.get(escolaridade.codigo),
-        genero,
-        zona,
-        quantidade,
-      })
-
-      // Flush do batch quando atinge o limite
-      if (batch.length >= BATCH_SIZE) {
-        metrics.inseridas += await loadBatch(batch)
-        batch = []
       }
 
       /**
        * Logging de progresso e métricas: observabilidade do pipeline —
-       * permite monitorar a execução em tempo real e estimar o tempo restante.
+       * permite monitorar a execução em tempo real.
        */
       if (metrics.lidas % LOG_STEP === 0) {
-        const elapsed  = ((Date.now() - startTime) / 1000).toFixed(1)
-        const rate     = Math.round(metrics.lidas / parseFloat(elapsed))
-        const pct      = ((metrics.lidas / 10_840_166) * 100).toFixed(1)
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1)
+        const pct     = ((metrics.lidas / 10_840_166) * 100).toFixed(1)
         process.stdout.write(
           `  [${elapsed}s | ${pct}%] lidas=${metrics.lidas.toLocaleString()} ` +
-          `inseridas=${metrics.inseridas.toLocaleString()} ` +
-          `(${rate.toLocaleString()} linhas/s)\n`
+          `combinações=${agregacao.size.toLocaleString()}\n`
         )
       }
     }
 
-    // Flush do batch residual
+    const t1 = ((Date.now() - startTime) / 1000).toFixed(1)
+    console.log(
+      `\n  Fase 1 concluída em ${t1}s — ` +
+      `${metrics.lidas.toLocaleString()} linhas, ` +
+      `${agregacao.size.toLocaleString()} combinações únicas`
+    )
+
+    // ── FASE 2: UPSERT DAS DIMENSÕES ─────────────────────────────────────
+    //
+    // Upsert nas dimensões (idempotência): o script pode ser executado
+    // múltiplas vezes sem criar registros duplicados. Princípio descrito em
+    // KLEPPMANN (2017) como característica essencial de pipelines confiáveis.
+    // ─────────────────────────────────────────────────────────────────────
+    console.log('\nFase 2/3 — Persistindo dimensões...')
+
+    for (const { codigo, nome, uf } of municipios.values()) {
+      const r = await prisma.municipio.upsert({
+        where:  { codigo },
+        update: { nome, uf },
+        create: { codigo, nome, uf },
+        select: { id: true },
+      })
+      municipioCache.set(codigo, r.id)
+    }
+    console.log(`  Municípios:     ${municipioCache.size}`)
+
+    for (const { codigo, descricao } of faixasEtarias.values()) {
+      const r = await prisma.faixaEtaria.upsert({
+        where:  { codigo },
+        update: { descricao },
+        create: { codigo, descricao },
+        select: { id: true },
+      })
+      faixaEtariaCache.set(codigo, r.id)
+    }
+    console.log(`  Faixas etárias: ${faixaEtariaCache.size}`)
+
+    for (const { codigo, descricao } of escolaridades.values()) {
+      const r = await prisma.escolaridade.upsert({
+        where:  { codigo },
+        update: { descricao },
+        create: { codigo, descricao },
+        select: { id: true },
+      })
+      escolaridadeCache.set(codigo, r.id)
+    }
+    console.log(`  Escolaridades:  ${escolaridadeCache.size}`)
+
+    // ── FASE 3: INSERT EM BATCH DOS PERFIS ───────────────────────────────
+    console.log('\nFase 3/3 — Inserindo perfis em batch...')
+
+    let batch = []
+
+    for (const entry of agregacao.values()) {
+      batch.push({
+        municipioId:    municipioCache.get(entry.municipio.codigo),
+        faixaEtariaId:  faixaEtariaCache.get(entry.faixaEtaria.codigo),
+        escolaridadeId: escolaridadeCache.get(entry.escolaridade.codigo),
+        genero:         entry.genero,
+        zona:           entry.zona,
+        quantidade:     entry.quantidade,
+      })
+
+      if (batch.length >= BATCH_SIZE) {
+        metrics.inseridas += await loadBatch(batch)
+        batch = []
+      }
+    }
+
     if (batch.length > 0) {
       metrics.inseridas += await loadBatch(batch)
     }
@@ -286,8 +340,7 @@ async function run() {
   } finally {
     /**
      * Tratamento de erros com finally: garante que a conexão com o banco
-     * seja encerrada mesmo em caso de erro, evitando connection leaks —
-     * situação em que conexões abertas esgotam o pool do PostgreSQL.
+     * seja encerrada mesmo em caso de erro, evitando connection leaks.
      */
     await prisma.$disconnect()
   }
@@ -299,7 +352,7 @@ async function run() {
   console.log('╚══════════════════════════════════════════════╝')
   console.log(`Tempo total              : ${totalSec}s`)
   console.log(`Linhas lidas             : ${metrics.lidas.toLocaleString()}`)
-  console.log(`Registros inseridos      : ${metrics.inseridas.toLocaleString()}`)
+  console.log(`Combinações únicas       : ${metrics.inseridas.toLocaleString()}`)
   console.log(`Linhas inválidas puladas : ${metrics.puladas.toLocaleString()}`)
   console.log(`Municípios               : ${municipioCache.size}`)
   console.log(`Faixas etárias           : ${faixaEtariaCache.size}`)
