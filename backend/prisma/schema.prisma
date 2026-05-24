@@ -8,11 +8,14 @@ datasource db {
 }
 
 model Municipio {
-  id        Int    @id @default(autoincrement())
-  codigo    String @unique
-  nome      String
-  uf        String @default("SP")
-  perfis    EleitoradoPerfil[]
+  id     Int    @id @default(autoincrement())
+  codigo String @unique
+  nome   String
+  uf     String
+  perfis EleitoradoPerfil[]
+
+  // Índice em uf para consultas de comparação entre estados (ex.: SP vs RJ)
+  @@index([uf])
 }
 
 model FaixaEtaria {
@@ -30,16 +33,20 @@ model Escolaridade {
 }
 
 model EleitoradoPerfil {
-  id            Int          @id @default(autoincrement())
-  municipio     Municipio    @relation(fields: [municipioId], references: [id])
-  municipioId   Int
-  faixaEtaria   FaixaEtaria  @relation(fields: [faixaEtariaId], references: [id])
-  faixaEtariaId Int
-  escolaridade  Escolaridade @relation(fields: [escolaridadeId], references: [id])
+  id             Int          @id @default(autoincrement())
+  municipio      Municipio    @relation(fields: [municipioId], references: [id])
+  municipioId    Int
+  faixaEtaria    FaixaEtaria  @relation(fields: [faixaEtariaId], references: [id])
+  faixaEtariaId  Int
+  escolaridade   Escolaridade @relation(fields: [escolaridadeId], references: [id])
   escolaridadeId Int
-  genero        String
-  quantidade    Int
+  genero         String
+  zona           String
+  quantidade     Int
 
+  // Unicidade por combinação completa incluindo zona eleitoral —
+  // cada linha do TSE representa uma zona específica de um município.
+  @@unique([municipioId, faixaEtariaId, escolaridadeId, genero, zona])
   @@index([municipioId])
   @@index([faixaEtariaId])
   @@index([escolaridadeId])
