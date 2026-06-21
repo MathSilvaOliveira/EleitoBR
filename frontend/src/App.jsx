@@ -31,7 +31,7 @@ function App() {
 
       {/* Cabeçalho */}
       <header className="bg-blue-900 text-white px-8 py-6 shadow-md">
-        <h1 className="text-2xl font-bold tracking-tight">EleitoSP</h1>
+        <h1 className="text-2xl font-bold tracking-tight">EleitoBR</h1>
         <p className="text-blue-300 text-sm mt-1">
           Perfil Demográfico do Eleitorado · Dados Abertos TSE
         </p>
