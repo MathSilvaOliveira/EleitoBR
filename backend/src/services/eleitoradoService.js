@@ -25,6 +25,8 @@
 
 import prisma from '../lib/prisma.js'
 
+const UF_EXTERIOR = 'ZZ'
+
 // ─── RESUMO ──────────────────────────────────────────────────────────────────
 
 /**
@@ -54,13 +56,15 @@ export async function getResumo(filters = {}) {
     }),
 
     // COUNT total de municípios cadastrados
-    prisma.municipio.count(),
+    prisma.municipio.count({
+      where: { uf: {not: UF_EXTERIOR }},
+    }),
 
     // COUNT DISTINCT estados — agrupa por uf e conta os grupos
     // O schema não possui tabela Estado; uf é campo de Municipio
     prisma.municipio.groupBy({
        by: ['uf'],
-       where: { uf: {not: 'ZZ' } },
+       where: { uf: {not: UF_EXTERIOR } },
       }),
   ])
 
@@ -191,7 +195,9 @@ export async function getMunicipios(filters = {}) {
       _sum:    { quantidade: true },
       orderBy: { _sum: { quantidade: 'desc' } },
     }),
-    prisma.municipio.findMany(),
+    prisma.municipio.findMany({
+      where: { uf: {not: UF_EXTERIOR } },
+    }),
   ])
 
   const munMap = new Map(municipios.map(m => [m.id, m]))
@@ -246,6 +252,7 @@ export async function getRegioes(filters = {}) {
     SELECT m."uf", SUM(e."quantidade")::int AS total
     FROM   "EleitoradoPerfil" e
     INNER  JOIN "Municipio" m ON e."municipioId" = m."id"
+    WHERE m."uf" != ${UF_EXTERIOR}
     GROUP  BY m."uf"
     ORDER  BY total DESC
   `
