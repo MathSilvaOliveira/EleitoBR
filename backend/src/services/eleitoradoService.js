@@ -58,7 +58,10 @@ export async function getResumo(filters = {}) {
 
     // COUNT DISTINCT estados — agrupa por uf e conta os grupos
     // O schema não possui tabela Estado; uf é campo de Municipio
-    prisma.municipio.groupBy({ by: ['uf'] }),
+    prisma.municipio.groupBy({
+       by: ['uf'],
+       where: { uf: {not: 'ZZ' } },
+      }),
   ])
 
   return {
