@@ -1,6 +1,6 @@
-# EleitoSP
+# EleitoBR
 
-Plataforma web para análise e visualização do perfil demográfico do eleitorado do Estado de São Paulo, com base nos dados abertos do TSE.
+Plataforma web para análise interativa e visualização do perfil demográfico do eleitorado brasileiro — todos os estados e o eleitorado no exterior (ZZ) — com base nos dados abertos do TSE.
 
 ---
 
@@ -8,7 +8,7 @@ Plataforma web para análise e visualização do perfil demográfico do eleitora
 
 | Camada | Tecnologia |
 |---|---|
-| Frontend | React 18 + Vite + Recharts + TailwindCSS |
+| Frontend | React 19 + Vite + Recharts + TailwindCSS 4 |
 | Backend | Node.js + Express.js |
 | ORM | Prisma 5 |
 | Banco de dados | PostgreSQL 16 |
@@ -17,85 +17,130 @@ Plataforma web para análise e visualização do perfil demográfico do eleitora
 
 ---
 
-## Pré-requisitos
+## Arquitetura
 
-- [Node.js 20.19.0](https://nodejs.org/en/blog/release/v20.19.0) — versão exata recomendada
-- [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- [Git](https://git-scm.com)
+```
+frontend/src
+├── context/        FiltrosContext (drill-down global) · TemaContext (dark/light)
+├── hooks/          useApi (fetch com params, AbortController, refetch automático)
+├── components/
+│   ├── ui/         ChartCard, InfoTooltip, Skeleton, ErroCarga, ThemeToggle
+│   ├── charts/     Pirâmide etária, Heatmap, Barras empilhadas, Donut, UFs
+│   ├── FilterBar   Filtros dinâmicos (UF + autocomplete de município)
+│   ├── RankingMunicipios   Tabela de indicadores (IEE, Hiato Instrucional)
+│   └── ExteriorPanel       Painel do eleitorado no exterior (ZZ)
+└── utils/          formatos.js (formatação e macro-faixas etárias)
 
-> **Windows:** instale o Node.js pelo instalador oficial do link acima.
-> Após instalar, confirme no terminal:
-> ```bash
-> node -v  # deve mostrar v20.19.0
-> npm -v   # deve mostrar 10.x.x
-> ```
-
----
-
-## Como rodar
-
-**1. Clone o repositório**
-```bash
-git clone https://github.com/seu-usuario/eleitosp.git
-cd eleitosp
+backend/src
+├── lib/            prisma.js · logger.js (JSON estruturado) · queryFilters.js
+├── services/       eleitoradoService.js (dimensão única)
+│                   cruzamentoService.js (cruzamentos + indicadores)
+├── routes/         index.js (validação + delegação, handler DRY)
+└── app.js          middlewares (CORS, request log, erro global)
 ```
 
-**2. Configure as variáveis de ambiente**
-```bash
-cp backend/.env.example backend/.env
-```
-
-**3. Suba os containers**
-```bash
-docker compose up --build
-```
-
-**4. Rode a migration do banco (primeira vez)**
-```bash
-docker compose exec backend npx prisma migrate dev --name init
-```
-
-**5. Acesse**
-- Frontend: http://localhost:5173
-- API: http://localhost:3001
-- Health check: http://localhost:3001/health
-
----
-
-## ETL — Carga dos dados do TSE
-
-Baixe o arquivo CSV do [Portal de Dados Abertos do TSE](https://dadosabertos.tse.jus.br/dataset/eleitorado-atual), coloque em `data/eleitorado_sp.csv` e execute:
-
-```bash
-docker compose exec backend npm run etl
-```
+Padrão em camadas (MVC adaptado a API): **rotas** validam e delegam, **services** concentram a lógica de dados, o **Prisma/PostgreSQL** persiste. O frontend atua como camada de visualização desacoplada, consumindo a API REST.
 
 ---
 
 ## Endpoints da API
 
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/health` | Status da API |
-| GET | `/api/resumo` | Total de eleitores e visão geral |
-| GET | `/api/faixa-etaria` | Distribuição por faixa etária |
-| GET | `/api/genero` | Distribuição por gênero |
-| GET | `/api/escolaridade` | Distribuição por escolaridade |
-| GET | `/api/municipios` | Dados por município |
-| GET | `/api/regioes` | Dados por região |
+Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior) e `?municipioId=123`.
+
+| Endpoint | Descrição |
+|---|---|
+| `GET /api/resumo` | Totais: Brasil (sem exterior), exterior, seleção atual, municípios, estados |
+| `GET /api/faixa-etaria` | Distribuição por faixa etária |
+| `GET /api/genero` | Distribuição por gênero |
+| `GET /api/escolaridade` | Distribuição por grau de instrução |
+| `GET /api/municipios?q=&uf=&limit=` | Busca leve de municípios (autocomplete) |
+| `GET /api/municipios/ranking?uf=&limit=` | Top municípios por eleitores |
+| `GET /api/regioes` | Total por UF (exclui ZZ) |
+| `GET /api/cruzamentos/genero-faixa` | Gênero × faixa etária (pirâmide) |
+| `GET /api/cruzamentos/escolaridade-faixa` | Escolaridade × faixa etária (heatmap) |
+| `GET /api/cruzamentos/escolaridade-genero` | Escolaridade × gênero (empilhado) |
+| `GET /api/indicadores/municipios?orderBy=total\|iee\|hiato&minEleitores=` | IEE e Hiato Instrucional por município |
+| `GET /api/exterior?limit=` | Perfil consolidado do eleitorado no exterior |
+
+**Convenção para o exterior (ZZ):** agregados nacionais excluem ZZ; `uf=ZZ` consulta exclusivamente o exterior; o total do exterior é exposto separadamente em `/api/resumo` (`total_exterior`).
+
+### Indicadores originais
+
+- **IEE — Índice de Envelhecimento Eleitoral** = eleitores 60+ ÷ eleitores 16–24. IEE > 1: idosos superam jovens no eleitorado.
+- **Hiato Instrucional (p.p.)** = %baixa instrução (analfabeto, lê e escreve, fundamental incompleto) − %instrução superior (incompleta ou completa). Positivo: predomínio de baixa instrução.
+
+Municípios com menos de 10.000 eleitores são omitidos do ranking por padrão (`minEleitores`), evitando distorção de razões em populações pequenas.
 
 ---
 
-## Estrutura do projeto
+## Pré-requisitos
 
+- [Node.js 20.19.0](https://nodejs.org/en/blog/release/v20.19.0)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- [Git](https://git-scm.com)
+
+> **Windows:** instale o Node.js pelo instalador oficial. **Linux:** use o asdf (`.tool-versions` já aponta a versão).
+
+---
+
+## Como rodar
+
+**1. Clone e configure**
+```bash
+git clone https://github.com/seu-usuario/eleitobr.git
+cd eleitobr
+cp backend/.env-example backend/.env
+cp frontend/.env-example frontend/.env
 ```
-eleitosp/
-├── backend/          # Node.js + Express (porta 3001)
-│   ├── src/
-│   ├── prisma/
-│   └── etl/
-├── frontend/         # React + Vite (porta 5173)
-│   └── src/
-├── data/             # CSV do TSE (não versionado)
-└── docker-compose.yml
+
+**2. Suba os containers**
+```bash
+docker compose up --build
+```
+
+**3. Aplique o schema no banco** (primeira vez)
+```bash
+docker compose exec backend npx prisma db push
+```
+
+> **Nota sobre migrations:** o histórico em `prisma/migrations` está dessincronizado do schema (a migration `init` não contém a coluna `zona`; o schema evoluiu via `db push`). Para regularizar em um banco novo: `docker compose exec backend npx prisma migrate dev --name sync_schema`. Enquanto isso não for feito, use `db push` — **não** use `migrate deploy`.
+
+**4. Carregue os dados do TSE**
+
+Baixe manualmente o CSV `perfil_eleitorado_ATUAL.csv` no [portal de dados abertos do TSE](https://dadosabertos.tse.jus.br/) (download manual é intencional, por reprodutibilidade acadêmica), salve como `data/eleitorado.csv` na raiz do projeto e rode:
+```bash
+docker compose exec backend node etl/load.js
+```
+
+**5. Acesse**
+- Dashboard: http://localhost:5173
+- API: http://localhost:3001/api/resumo · Health: http://localhost:3001/health
+
+**Smoke test da API:**
+```bash
+curl "http://localhost:3001/api/cruzamentos/genero-faixa?uf=SP"
+curl "http://localhost:3001/api/indicadores/municipios?orderBy=iee&limit=5"
+curl "http://localhost:3001/api/exterior"
+```
+
+---
+
+## Funcionalidades do dashboard
+
+- **Filtros dinâmicos globais**: UF (incluindo Exterior/ZZ) + autocomplete de município com debounce; toda a tela reage.
+- **Drill-down**: clique em uma barra de estado ou em uma linha do ranking para filtrar o dashboard inteiro; clique novamente para desfazer.
+- **Cruzamentos**: pirâmide etária (gênero × idade), mapa de calor (escolaridade × idade), barras empilhadas (escolaridade × gênero).
+- **Indicadores originais**: IEE e Hiato Instrucional por município, com ordenação server-side.
+- **Exterior (ZZ)**: painel dedicado com total, gênero e maiores localidades no mundo; botão para analisar o exterior em todos os gráficos.
+- **Modo escuro/claro** persistido, com paleta própria para os gráficos.
+- **Tooltips explicativos (ⓘ)** em todos os cartões; carregamento assíncrono e independente por gráfico (skeleton + estado de erro).
+
+---
+
+## Logs estruturados
+
+O backend emite logs JSON (um por linha): requisições com método, rota, status e latência (`http_request`) e erros (`unhandled_error`). Nível mínimo via `LOG_LEVEL` (`debug|info|warn|error`, default `info`).
+
+```bash
+docker compose logs backend | grep http_request | tail
 ```
