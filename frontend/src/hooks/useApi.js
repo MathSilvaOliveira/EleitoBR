@@ -1,39 +1,55 @@
-/**
- * Hook customizado para busca de dados da API EleitoSP.
- *
- * Separa a lógica de busca de dados do componente visual — padrão descrito
- * em ABRAMOV (2015) como "Presentational and Container Components": componentes
- * visuais recebem dados como props e não conhecem a origem; a lógica de
- * fetch fica isolada e reutilizável em qualquer componente.
- *
- * Referência: ABRAMOV, D. Presentational and Container Components.
- *   Medium, 2015.
- */
-
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
-const BASE_URL = 'http://localhost:3001'
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
-/**
- * @param {string} endpoint - Caminho do endpoint (ex: '/api/resumo')
- * @returns {{ data: any, loading: boolean, error: string|null }}
- */
-export function useApi(endpoint) {
-  const [data,    setData]    = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
+function toQueryString(params) {
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== null && v !== undefined && v !== '') qs.set(k, String(v))
+  }
+  const s = qs.toString()
+  return s ? `?${s}` : ''
+}
+
+export function useApi(endpoint, params = {}) {
+  const queryString = toQueryString(params)
+  const url         = `${BASE_URL}${endpoint}${queryString}`
+
+  const [state, setState] = useState({
+    url:     null,
+    data:    null,
+    loading: true,
+    error:   null,
+  })
+
+  const urlAtualRef = useRef(null)
 
   useEffect(() => {
-    setLoading(true)
-    setError(null)
+    urlAtualRef.current  = url
+    const controller     = new AbortController()
 
     axios
-      .get(`${BASE_URL}${endpoint}`)
-      .then(res => setData(res.data))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [endpoint])
+      .get(url, { signal: controller.signal })
+      .then(res => {
+        if (urlAtualRef.current !== url) return
+        setState({ url, data: res.data, loading: false, error: null })
+      })
+      .catch(err => {
+        if (axios.isCancel(err) || err.name === 'CanceledError') return
+        if (urlAtualRef.current !== url) return
+        setState({
+          url,
+          data:    null,
+          loading: false,
+          error:   err.response?.data?.message ?? err.message,
+        })
+      })
 
-  return { data, loading, error }
+    return () => controller.abort()
+  }, [url])
+
+  const loading = state.url !== url || state.loading
+
+  return { data: state.data, loading, error: state.error }
 }

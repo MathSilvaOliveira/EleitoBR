@@ -1,105 +1,65 @@
-/**
- * Camada de Rotas — EleitoSP API
- *
- * Responsabilidade exclusiva: receber a requisição HTTP, extrair e validar
- * parâmetros, delegar ao Service Layer e retornar a resposta ao cliente.
- * Nenhuma lógica de negócio ou query de banco reside aqui — princípio de
- * separação de responsabilidades (FOWLER, 2002, p. 133).
- *
- * Tratamento de erros: try/catch com next(err) em cada handler encaminha
- * exceções ao middleware global de erros registrado em app.js, garantindo
- * resposta padronizada sem vazar stack traces ao cliente (OWASP, 2021).
- *
- * Arquitetura REST: endpoints nomeados como recursos no plural, método GET
- * para leitura, sem estado no servidor entre requisições (FIELDING, 2000).
- *
- * Referências:
- *   FIELDING, R. T. Architectural Styles and the Design of Network-based
- *     Software Architectures. PhD dissertation, UCI, 2000.
- *   FOWLER, M. Patterns of Enterprise Application Architecture.
- *     Addison-Wesley, 2002. p. 133.
- *   OWASP. OWASP Top Ten. 2021.
- */
-
 import { Router } from 'express'
-import * as service from '../services/eleitoradoService.js'
+import * as service     from '../services/eleitoradoService.js'
+import * as cruzamentos from '../services/cruzamentoService.js'
+import { parseFilters } from '../lib/queryFilters.js'
 
 const router = Router()
 
-// ── GET /api/resumo ────────────────────────────────────────────────────────────
-router.get('/resumo', async (req, res, next) => {
-  try {
-    const filters = {
-      uf: req.query.uf ?? null,
+function handler(fn) {
+  return async (req, res, next) => {
+    try {
+      const { filters, errors } = parseFilters(req.query)
+      if (errors.length > 0) {
+        return res.status(400).json({ error: 'BadRequest', detalhes: errors })
+      }
+      res.json(await fn(filters, req))
+    } catch (err) {
+      next(err)
     }
-    res.json(await service.getResumo(filters))
-  } catch (err) {
-    next(err)
   }
-})
+}
 
-// ── GET /api/faixa-etaria ──────────────────────────────────────────────────────
-router.get('/faixa-etaria', async (req, res, next) => {
-  try {
-    const filters = {
-      uf:          req.query.uf          ?? null,
-      municipioId: req.query.municipioId ? Number(req.query.municipioId) : null,
-    }
-    res.json(await service.getFaixaEtaria(filters))
-  } catch (err) {
-    next(err)
-  }
-})
+// ── Consultas de dimensão única ────────────────────────────────────────────
+router.get('/resumo',       handler(f => service.getResumo(f)))
+router.get('/faixa-etaria', handler(f => service.getFaixaEtaria(f)))
+router.get('/genero',       handler(f => service.getGenero(f)))
+router.get('/escolaridade', handler(f => service.getEscolaridade(f)))
+router.get('/regioes',      handler(() => service.getRegioes()))
 
-// ── GET /api/genero ────────────────────────────────────────────────────────────
-router.get('/genero', async (req, res, next) => {
-  try {
-    const filters = {
-      uf:          req.query.uf          ?? null,
-      municipioId: req.query.municipioId ? Number(req.query.municipioId) : null,
-    }
-    res.json(await service.getGenero(filters))
-  } catch (err) {
-    next(err)
-  }
-})
+// ── Municípios ─────────────────────────────────────────────────────────────
+router.get('/municipios', handler((f, req) =>
+  service.getMunicipios({ ...f, q: req.query.q?.toString().trim() || null })))
 
-// ── GET /api/escolaridade ──────────────────────────────────────────────────────
-router.get('/escolaridade', async (req, res, next) => {
-  try {
-    const filters = {
-      uf:          req.query.uf          ?? null,
-      municipioId: req.query.municipioId ? Number(req.query.municipioId) : null,
-    }
-    res.json(await service.getEscolaridade(filters))
-  } catch (err) {
-    next(err)
-  }
-})
+router.get('/municipios/ranking', handler(f =>
+  service.getRankingMunicipios(f)))
 
-// ── GET /api/municipios ────────────────────────────────────────────────────────
-router.get('/municipios', async (req, res, next) => {
-  try {
-    const filters = {
-      uf:    req.query.uf    ?? null,
-      limit: req.query.limit ? Number(req.query.limit) : null,
-    }
-    res.json(await service.getMunicipios(filters))
-  } catch (err) {
-    next(err)
-  }
-})
+// ── Cruzamentos ────────────────────────────────────────────────────────────
+router.get('/cruzamentos/genero-faixa', handler(f =>
+  cruzamentos.getGeneroPorFaixa(f)))
 
-// ── GET /api/regioes ───────────────────────────────────────────────────────────
-router.get('/regioes', async (req, res, next) => {
-  try {
-    const filters = {
-      uf: req.query.uf ?? null,
-    }
-    res.json(await service.getRegioes(filters))
-  } catch (err) {
-    next(err)
-  }
-})
+router.get('/cruzamentos/escolaridade-faixa', handler(f =>
+  cruzamentos.getEscolaridadePorFaixa(f)))
+
+router.get('/cruzamentos/escolaridade-genero', handler(f =>
+  cruzamentos.getEscolaridadePorGenero(f)))
+
+// ── Indicadores originais ──────────────────────────────────────────────────
+router.get('/indicadores/municipios', handler((f, req) => {
+  const orderBy = ['total', 'iee', 'hiato'].includes(req.query.orderBy)
+    ? req.query.orderBy
+    : 'total'
+
+  const minEleitores = Number(req.query.minEleitores)
+  return cruzamentos.getIndicadoresMunicipios({
+    ...f,
+    orderBy,
+    minEleitores: Number.isInteger(minEleitores) && minEleitores >= 0
+      ? minEleitores
+      : undefined,
+  })
+}))
+
+// ── Exterior (ZZ) ──────────────────────────────────────────────────────────
+router.get('/exterior', handler(f => cruzamentos.getExterior(f)))
 
 export default router

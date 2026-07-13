@@ -1,65 +1,66 @@
 import {
-  PieChart, Pie, Cell,
-  Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
+import { useTema } from '../../context/TemaContext'
+import { numeroCompacto, numeroPtBR } from '../../utils/formatos'
 
-const CORES = {
-  F:  '#ec4899',
-  M:  '#3b82f6',
-  NI: '#94a3b8',
-}
+const LABELS = { F: 'Feminino', M: 'Masculino', NI: 'Não informado' }
 
-const LABELS = {
-  F:  'Feminino',
-  M:  'Masculino',
-  NI: 'Não informado',
-}
+export function GeneroChart({ data }) {
+  const { paleta } = useTema()
 
-/**
- * Gráfico de pizza com distribuição por gênero.
- *
- * @param {{ data: Array<{genero: string, total: number}>, loading: boolean }} props
- */
-export function GeneroChart({ data, loading }) {
-  if (loading) return <Placeholder />
-
+  const CORES = { F: paleta.feminino, M: paleta.masculino, NI: paleta.naoInf }
   const total = data.reduce((acc, d) => acc + d.total, 0)
 
   const chartData = data.map(d => ({
     name:  LABELS[d.genero] ?? d.genero,
     value: d.total,
-    pct:   ((d.total / total) * 100).toFixed(1),
-    cor:   CORES[d.genero]  ?? '#cbd5e1',
+    pct:   total > 0 ? ((d.total / total) * 100).toFixed(1) : 0,
+    cor:   CORES[d.genero] ?? paleta.naoInf,
   }))
 
   return (
-    <ResponsiveContainer width="100%" height={420}>
-      <PieChart>
-        <Pie
-          data={chartData}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="45%"
-          outerRadius={140}
-          label={({ name, pct }) => `${name} ${pct}%`}
-          labelLine={true}
-        >
-          {chartData.map((entry, i) => (
-            <Cell key={i} fill={entry.cor} />
-          ))}
-        </Pie>
-        <Tooltip formatter={v => [v.toLocaleString('pt-BR'), 'Eleitores']} />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
-  )
-}
+    <div className="relative">
+      <ResponsiveContainer width="100%" height={420}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            cx="50%" cy="46%"
+            innerRadius={82}
+            outerRadius={140}
+            paddingAngle={2}
+            label={({ name, pct }) => `${name} ${pct}%`}
+            labelLine
+          >
+            {chartData.map((entry, i) => (
+              <Cell key={i} fill={entry.cor} stroke="none" />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={v => [numeroPtBR(v), 'Eleitores']}
+            contentStyle={{
+              backgroundColor: paleta.tooltipBg,
+              border: `1px solid ${paleta.borda}`,
+              borderRadius: 8,
+              color: paleta.tooltipTxt,
+            }}
+          />
+          <Legend formatter={v => (
+            <span style={{ color: paleta.eixo, fontSize: 12 }}>{v}</span>
+          )} />
+        </PieChart>
+      </ResponsiveContainer>
 
-function Placeholder() {
-  return (
-    <div className="flex items-center justify-center h-[420px] text-gray-400">
-      Carregando...
+      {/* Total no centro do donut */}
+      <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2
+                      text-center pointer-events-none">
+        <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">
+          {numeroCompacto(total)}
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">eleitores</p>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -8,23 +10,26 @@
 
 body {
   margin: 0;
-  color: #111827 !important;
 }
 
-h1, h2, h3, h4, p, span, div {
-  color: inherit;
+/* Transição suave ao alternar tema */
+body, .card, header {
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm
+         border border-gray-200 dark:border-gray-700 p-6;
 }
 
 .chart-title {
-  color: #111827 !important;
-  font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  @apply text-gray-900 dark:text-gray-100 font-semibold text-base mb-1;
 }
 
 .section-title {
-  color: #111827 !important;
-  font-weight: 600;
-  font-size: 1.125rem;
-  margin-bottom: 1rem;
+  @apply text-gray-900 dark:text-gray-100 font-semibold text-lg mb-4;
+}
+
+.chart-subtitle {
+  @apply text-xs text-gray-500 dark:text-gray-400 mb-4;
 }

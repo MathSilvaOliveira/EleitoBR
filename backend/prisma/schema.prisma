@@ -44,11 +44,16 @@ model EleitoradoPerfil {
   zona           String
   quantidade     Int
 
-  // Unicidade por combinação completa incluindo zona eleitoral —
+  // Unicidade por combinação completa incluindo zona eleitoral
   // cada linha do TSE representa uma zona específica de um município.
   @@unique([municipioId, faixaEtariaId, escolaridadeId, genero, zona])
   @@index([municipioId])
   @@index([faixaEtariaId])
   @@index([escolaridadeId])
   @@index([genero])
+
+  // Índices compostos para os endpoints de cruzamento
+  @@index([faixaEtariaId, genero])
+  @@index([escolaridadeId, faixaEtariaId])
+  @@index([escolaridadeId, genero])
 }
