@@ -1,41 +1,55 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
-export function useApi(endpoint, params = {}) {
-  const [data,    setData]    = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
+function toQueryString(params) {
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== null && v !== undefined && v !== '') qs.set(k, String(v))
+  }
+  const s = qs.toString()
+  return s ? `?${s}` : ''
+}
 
-  const queryString = useMemo(() => {
-    const qs = new URLSearchParams()
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== null && v !== undefined && v !== '') qs.set(k, v)
-    }
-    const s = qs.toString()
-    return s ? `?${s}` : ''
-  }, [JSON.stringify(params)])
+export function useApi(endpoint, params = {}) {
+  const queryString = toQueryString(params)
+  const url         = `${BASE_URL}${endpoint}${queryString}`
+
+  const [state, setState] = useState({
+    url:     null,
+    data:    null,
+    loading: true,
+    error:   null,
+  })
+
+  const urlAtualRef = useRef(null)
 
   useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(null)
+    urlAtualRef.current  = url
+    const controller     = new AbortController()
 
     axios
-      .get(`${BASE_URL}${endpoint}${queryString}`, { signal: controller.signal })
+      .get(url, { signal: controller.signal })
       .then(res => {
-        setData(res.data)
-        setLoading(false)
+        if (urlAtualRef.current !== url) return
+        setState({ url, data: res.data, loading: false, error: null })
       })
       .catch(err => {
         if (axios.isCancel(err) || err.name === 'CanceledError') return
-        setError(err.response?.data?.message ?? err.message)
-        setLoading(false)
+        if (urlAtualRef.current !== url) return
+        setState({
+          url,
+          data:    null,
+          loading: false,
+          error:   err.response?.data?.message ?? err.message,
+        })
       })
 
     return () => controller.abort()
-  }, [endpoint, queryString])
+  }, [url])
 
-  return { data, loading, error }
+  const loading = state.url !== url || state.loading
+
+  return { data: state.data, loading, error: state.error }
 }

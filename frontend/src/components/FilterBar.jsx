@@ -13,24 +13,29 @@ export function FilterBar({ ufs = [] }) {
   const debounceRef = useRef(null)
 
   // Autocomplete com debounce
-  useEffect(() => {
-    if (busca.trim().length < 2) { setSugestoes([]); return }
+useEffect(() => {
+  const q = busca.trim()
+  clearTimeout(debounceRef.current)
 
-    clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const params = new URLSearchParams({ q: busca.trim(), limit: 8 })
-        if (uf) params.set('uf', uf)
-        const res = await axios.get(`${BASE_URL}/api/municipios?${params}`)
-        setSugestoes(res.data)
-        setAberto(true)
-      } catch {
-        setSugestoes([])
-      }
-    }, 300)
+  debounceRef.current = setTimeout(async () => {
+    if (q.length < 2) {
+      setSugestoes([])
+      setAberto(false)
+      return
+    }
+    try {
+      const params = new URLSearchParams({ q, limit: 8 })
+      if (uf) params.set('uf', uf)
+      const res = await axios.get(`${BASE_URL}/api/municipios?${params}`)
+      setSugestoes(res.data)
+      setAberto(true)
+    } catch {
+      setSugestoes([])
+    }
+  }, q.length < 2 ? 0 : 300)
 
-    return () => clearTimeout(debounceRef.current)
-  }, [busca, uf])
+  return () => clearTimeout(debounceRef.current)
+}, [busca, uf])
 
   function escolher(m) {
     setMunicipio(m)
