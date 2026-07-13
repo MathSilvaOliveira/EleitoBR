@@ -119,7 +119,7 @@ useEffect(() => {
                              text-gray-800 dark:text-gray-200
                              hover:bg-blue-50 dark:hover:bg-gray-700"
                 >
-                  {m.nome} <span className="text-gray-400">– {m.uf}</span>
+                  {m.nome} <span className="text-gray-400">– {m.uf === 'ZZ' ? 'Exterior' : m.uf}</span>
                 </button>
               </li>
             ))}
