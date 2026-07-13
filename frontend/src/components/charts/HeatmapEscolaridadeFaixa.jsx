@@ -48,7 +48,7 @@ export function HeatmapEscolaridadeFaixa({ data }) {
   const corBase = tema === 'dark' ? '96, 165, 250' : '37, 99, 235'  // azul RGB
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto pb-3">
       <div
         className="grid gap-[3px] min-w-[560px]"
         style={{ gridTemplateColumns: `130px repeat(${BUCKETS_ROTULOS.length}, 1fr)` }}

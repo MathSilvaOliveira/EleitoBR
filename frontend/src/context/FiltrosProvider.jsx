@@ -32,7 +32,7 @@ export function FiltrosProvider({ children }) {
     },
     rotulo: municipio
       ? `${municipio.nome} – ${municipio.uf}`
-      : uf === 'ZZ' ? 'Exterior (ZZ)'
+      : uf === 'ZZ' ? 'Exterior'
       : uf ?? 'Brasil',
   }), [uf, municipio, setUf, setMunicipio, limpar])
 

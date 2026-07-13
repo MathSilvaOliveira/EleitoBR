@@ -54,7 +54,7 @@ function App() {
               label="eleitores (sem exterior)"
             />
             <KPICard
-              title="Exterior (ZZ)"
+              title="Exterior"
               value={resumo.data?.total_exterior}
               label="eleitores fora do país"
             />

@@ -82,7 +82,7 @@ useEffect(() => {
           {ufs.map(u => (
             <option key={u.uf} value={u.uf}>{u.uf}</option>
           ))}
-          <option value="ZZ">Exterior (ZZ)</option>
+          <option value="ZZ">Exterior</option>
         </select>
       </label>
 

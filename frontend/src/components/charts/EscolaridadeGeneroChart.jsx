@@ -43,7 +43,9 @@ export function EscolaridadeGeneroChart({ data }) {
           labelStyle={{ color: paleta.tooltipTxt, fontWeight: 600 }}
           cursor={{ fill: paleta.grade, opacity: 0.35 }}
         />
-        <Legend formatter={v => (
+        <Legend
+         wrapperStyle={{ paddingTop: 12, bottom: 0 }}
+         formatter={v => (
           <span style={{ color: paleta.eixo, fontSize: 12 }}>{v}</span>
         )} />
         <Bar dataKey="Feminino"  stackId="g" fill={paleta.feminino} />

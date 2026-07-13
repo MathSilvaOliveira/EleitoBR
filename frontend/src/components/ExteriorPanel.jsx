@@ -18,7 +18,7 @@ export function ExteriorPanel() {
     <div className="card">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="chart-title">🌍 Eleitorado no Exterior (ZZ)</p>
+          <p className="chart-title">🌍 Eleitorado no Exterior</p>
           <p className="chart-subtitle">
             Brasileiros aptos a votar fora do país, por localidade de alistamento
           </p>
