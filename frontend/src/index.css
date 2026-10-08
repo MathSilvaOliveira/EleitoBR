@@ -33,3 +33,24 @@ body, .card, header {
 .chart-subtitle {
   @apply text-xs text-gray-500 dark:text-gray-400 mb-4;
 }
+
+/* O Recharts marca o <svg> do gráfico com tabindex=0, então clicar nele
+   desenha o outline padrão do navegador. Suprime no clique e mantém o anel
+   na navegação por teclado. */
+.recharts-wrapper:focus,
+.recharts-wrapper :focus {
+  outline: none;
+}
+
+.recharts-wrapper:focus-visible,
+.recharts-wrapper :focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Rótulos sobrepostos ao gráfico não são conteúdo copiável e seriam
+   selecionados junto com o clique. */
+.recharts-wrapper text,
+.rotulo-grafico {
+  user-select: none;
+}

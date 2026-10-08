@@ -67,8 +67,8 @@ export function GeneroChart({ data }) {
       </ResponsiveContainer>
 
       {/* Total no centro do donut */}
-      <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2
-                      text-center pointer-events-none">
+      <div className="rotulo-grafico absolute top-[46%] left-1/2 -translate-x-1/2
+                      -translate-y-1/2 text-center pointer-events-none">
         <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">
           {numeroCompacto(selecionada ? selecionada.value : total)}
         </p>
