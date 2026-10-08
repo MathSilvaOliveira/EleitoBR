@@ -124,6 +124,15 @@ export async function getEscolaridade(filters = {}) {
 // ─── MUNICÍPIOS (busca leve p/ autocomplete) ─────────────────────────────────
 
 export async function getMunicipios(filters = {}) {
+  // Busca por id serve para reidratar o município vindo da URL — precisa
+  // alcançar também as localidades do exterior, que o filtro padrão exclui.
+  if (filters.municipioId) {
+    return prisma.municipio.findMany({
+      where:  { id: filters.municipioId },
+      select: { id: true, nome: true, uf: true },
+    })
+  }
+
   const where = {}
 
   where.uf = filters.uf ? filters.uf : { not: UF_EXTERIOR }
@@ -181,4 +190,28 @@ export async function getRegioes(filters = {}) {
     uf:    row.uf,
     total: Number(row.total),
   }))
+}
+
+// ─── PROCEDÊNCIA DOS DADOS ───────────────────────────────────────────────────
+
+/**
+ * Identidade do arquivo do TSE por trás dos números em exibição.
+ * bytes é BigInt no banco e vira Number aqui porque BigInt não é
+ * serializável em JSON — 2,2 GB cabe folgado em Number.MAX_SAFE_INTEGER.
+ */
+export async function getImportacao() {
+  const r = await prisma.importacao.findFirst({ orderBy: { carregadoEm: 'desc' } })
+  if (!r) return null
+
+  return {
+    arquivo:            r.arquivo,
+    bytes:              Number(r.bytes),
+    sha256:             r.sha256,
+    baixado_em:         r.baixadoEm,
+    carregado_em:       r.carregadoEm,
+    linhas_lidas:       r.linhasLidas,
+    registros_gravados: r.registrosGravados,
+    municipios:         r.municipios,
+    observacao:         r.observacao,
+  }
 }

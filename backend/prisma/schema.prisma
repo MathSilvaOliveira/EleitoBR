@@ -57,3 +57,21 @@ model EleitoradoPerfil {
   @@index([escolaridadeId, faixaEtariaId])
   @@index([escolaridadeId, genero])
 }
+
+/// Identidade do arquivo do TSE que originou os dados em uso.
+/// O portal publica sempre sob o mesmo nome ("ATUAL"), então sem este
+/// registro não há como saber a qual recorte os números se referem.
+model Importacao {
+  id                Int      @id @default(autoincrement())
+  arquivo           String
+  bytes             BigInt
+  sha256            String
+  baixadoEm         DateTime
+  carregadoEm       DateTime @default(now())
+  linhasLidas       Int
+  registrosGravados Int
+  municipios        Int
+  observacao        String?
+
+  @@index([carregadoEm])
+}

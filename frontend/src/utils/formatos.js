@@ -46,3 +46,14 @@ export function bucketFaixa(codigo) {
 }
 
 export const GENERO_ROTULO = { F: 'Feminino', M: 'Masculino', NI: 'Não informado' }
+
+export function dataPtBR(iso) {
+  return iso ? new Date(iso).toLocaleDateString('pt-BR') : '—'
+}
+
+export function tamanhoArquivo(bytes) {
+  if (bytes == null) return '—'
+  const gb = bytes / 1_000_000_000
+  if (gb >= 1) return `${gb.toFixed(1).replace('.', ',')} GB`
+  return `${(bytes / 1_000_000).toFixed(0)} MB`
+}

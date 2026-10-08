@@ -54,13 +54,15 @@ Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior), `?municipioId=123` e `
 | `GET /api/genero` | Distribuição por gênero |
 | `GET /api/escolaridade` | Distribuição por grau de instrução |
 | `GET /api/municipios?q=&uf=&limit=` | Busca leve de municípios (autocomplete) |
+| `GET /api/municipios?municipioId=` | Busca por id; alcança também o exterior |
 | `GET /api/municipios/ranking?uf=&limit=` | Top municípios por eleitores |
 | `GET /api/regioes` | Total por UF (exclui ZZ) |
 | `GET /api/cruzamentos/genero-faixa` | Gênero × faixa etária (pirâmide) |
 | `GET /api/cruzamentos/escolaridade-faixa` | Escolaridade × faixa etária (heatmap) |
 | `GET /api/cruzamentos/escolaridade-genero` | Escolaridade × gênero (empilhado) |
-| `GET /api/indicadores/municipios?orderBy=total\|iee\|hiato&minEleitores=` | IEE e Hiato Instrucional por município |
+| `GET /api/indicadores/municipios?orderBy=total\|iee\|hiato&direcao=desc\|asc&minEleitores=` | IEE e Hiato Instrucional por município |
 | `GET /api/exterior?limit=` | Perfil consolidado do eleitorado no exterior |
+| `GET /api/importacao` | Procedência: arquivo, tamanho, data e SHA-256 do CSV em uso |
 
 **Convenção para o gênero:** os gráficos que têm gênero como eixo próprio (donut de gênero, pirâmide etária e escolaridade × gênero) não aplicam `genero` a si mesmos — mantêm a comparação completa e apenas destacam a seleção. Caso contrário o donut viraria uma fatia única e deixaria de servir como controle, e os dois comparativos perderiam o sentido.
 
@@ -119,8 +121,23 @@ docker compose exec backend node etl/load.js
 **Smoke test da API:**
 ```bash
 curl "http://localhost:3001/api/cruzamentos/genero-faixa?uf=SP"
-curl "http://localhost:3001/api/indicadores/municipios?orderBy=iee&limit=5"
+curl "http://localhost:3001/api/indicadores/municipios?orderBy=iee&direcao=asc&limit=5"
 curl "http://localhost:3001/api/exterior"
+```
+
+---
+
+## Procedência dos dados
+
+O TSE republica o perfil do eleitorado sempre sob o mesmo nome (`perfil_eleitorado_ATUAL.csv`), de modo que o nome do arquivo não identifica o recorte: o mesmo link devolve números diferentes ao longo do tempo.
+
+Para que os números publicados sejam reproduzíveis, o ETL registra na tabela `Importacao` a identidade do arquivo que originou a carga — nome, tamanho em bytes, data de modificação, SHA-256 do conteúdo, linhas lidas e registros gravados. O dashboard exibe esse recorte no rodapé e a API o expõe em `GET /api/importacao`.
+
+Conferir se um banco corresponde ao arquivo que você tem em mãos:
+
+```bash
+sha256sum data/eleitorado.csv
+curl -s http://localhost:3001/api/importacao
 ```
 
 ---
@@ -147,8 +164,9 @@ A suíte cobre: exclusão do exterior (ZZ) dos agregados nacionais, composição
 
 - **Filtros dinâmicos globais**: UF (incluindo Exterior/ZZ) + autocomplete de município com debounce; toda a tela reage.
 - **Drill-down**: clique em uma barra de estado, em uma linha do ranking ou em uma fatia do donut de gênero para filtrar o dashboard inteiro; clique novamente para desfazer.
+- **Seleção na URL**: a visão atual fica na querystring (`?uf=SP&municipioId=5363&genero=F`), usando os mesmos nomes de parâmetro da API. A ordenação do ranking entra junto (`&orderBy=iee&direcao=asc`), de modo que o link reproduz a tela inteira. O link pode ser compartilhado, citado e recarregado, e cada mudança de filtro vira uma entrada no histórico — voltar e avançar funcionam; ordenar apenas refina a visão e não polui o histórico. Parâmetros inválidos ou id inexistente são descartados silenciosamente, caindo na visão nacional.
 - **Cruzamentos**: pirâmide etária (gênero × idade), mapa de calor (escolaridade × idade), barras empilhadas (escolaridade × gênero).
-- **Indicadores originais**: IEE e Hiato Instrucional por município, com ordenação server-side.
+- **Indicadores originais**: IEE e Hiato Instrucional por município, com ordenação server-side em ambos os sentidos — clicar na coluna já ativa inverte a ordem, revelando a outra ponta de cada indicador (o eleitorado mais jovem do país, a menor defasagem escolar). Municípios com indicador nulo ficam no fim nas duas direções.
 - **Exterior (ZZ)**: painel dedicado com total, gênero e maiores localidades no mundo; botão para analisar o exterior em todos os gráficos.
 - **Modo escuro/claro** persistido, com paleta própria para os gráficos.
 - **Tooltips explicativos (ⓘ)** em todos os cartões; carregamento assíncrono e independente por gráfico (skeleton + estado de erro).

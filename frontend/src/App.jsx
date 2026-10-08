@@ -11,6 +11,7 @@ import { GeneroChart }              from './components/charts/GeneroChart'
 import { RegiaoChart }              from './components/charts/RegiaoChart'
 import { RankingMunicipios }        from './components/RankingMunicipios'
 import { ExteriorPanel }            from './components/ExteriorPanel'
+import { Procedencia }              from './components/Procedencia'
 
 function App() {
   const { apiParams, apiParamsSemGenero, rotulo, rotuloLocal, uf, genero } = useFiltros()
@@ -153,6 +154,7 @@ function App() {
       <footer className="text-center text-xs text-gray-400 dark:text-gray-500 py-6">
         Fonte: TSE — Dados Abertos do Eleitorado ·
         Indicadores IEE e Hiato Instrucional: elaboração própria
+        <Procedencia />
       </footer>
     </div>
   )

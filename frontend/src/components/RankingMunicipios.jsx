@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useApi }     from '../hooks/useApi'
+import { useApi }           from '../hooks/useApi'
+import { useParametroUrl }  from '../hooks/useParametroUrl'
 import { useFiltros } from '../context/FiltrosContext'
 import { Skeleton, ErroCarga, InfoTooltip } from './ui/Primitivas'
 import { numeroPtBR } from '../utils/formatos'
@@ -10,6 +10,8 @@ const COLUNAS = [
   { chave: 'hiato', rotulo: 'Hiato (p.p.)' },
 ]
 
+const CHAVES = COLUNAS.map(c => c.chave)
+
 const INFO = `IEE (Índice de Envelhecimento Eleitoral) = eleitores 60+ ÷ eleitores 16–24; ` +
   `valores > 1 indicam mais idosos que jovens no eleitorado. ` +
   `Hiato Instrucional = %baixa instrução − %instrução superior, em pontos percentuais; ` +
@@ -18,12 +20,24 @@ const INFO = `IEE (Índice de Envelhecimento Eleitoral) = eleitores 60+ ÷ eleit
 
 export function RankingMunicipios() {
   const { uf, municipio, genero, setMunicipio } = useFiltros()
-  const [orderBy, setOrderBy] = useState('total')
+  const [orderBy, setOrderBy] = useParametroUrl('orderBy', 'total', CHAVES)
+  const [direcao, setDirecao] = useParametroUrl('direcao', 'desc', ['desc', 'asc'])
+
+  // Clicar na coluna já ativa inverte o sentido. É o que torna visível a outra
+  // ponta de cada indicador: o eleitorado mais jovem, a menor defasagem escolar.
+  function ordenarPor(chave) {
+    if (chave === orderBy) setDirecao(direcao === 'desc' ? 'asc' : 'desc')
+    else {
+      setOrderBy(chave)
+      setDirecao('desc')
+    }
+  }
 
   const { data, loading, error } = useApi('/api/indicadores/municipios', {
     uf: uf === 'ZZ' ? null : uf,   // indicadores não se aplicam ao exterior
     genero,
     orderBy,
+    direcao,
     limit: 15,
   })
 
@@ -57,13 +71,16 @@ export function RankingMunicipios() {
                 {COLUNAS.map(c => (
                   <th key={c.chave} className="py-2 pr-4 font-medium">
                     <button
-                      onClick={() => setOrderBy(c.chave)}
+                      onClick={() => ordenarPor(c.chave)}
+                      title={c.chave === orderBy
+                        ? 'Clique para inverter a ordem'
+                        : `Ordenar por ${c.rotulo}`}
                       className={`hover:text-blue-600 dark:hover:text-blue-400
                         ${orderBy === c.chave
                           ? 'text-blue-600 dark:text-blue-400 font-semibold'
                           : ''}`}
                     >
-                      {c.rotulo} {orderBy === c.chave ? '↓' : ''}
+                      {c.rotulo} {orderBy === c.chave ? (direcao === 'desc' ? '↓' : '↑') : ''}
                     </button>
                   </th>
                 ))}

@@ -115,13 +115,22 @@ export async function getIndicadoresMunicipios(filters = {}) {
   const limit         = filters.limit        ?? 15
   const minEleitores  = filters.minEleitores ?? 10_000
 
-  // Whitelist de ordenação — nome de coluna NUNCA vem do usuário direto
-  const orderMap = {
-    total: Prisma.sql`total DESC`,
-    iee:   Prisma.sql`iee DESC NULLS LAST`,
-    hiato: Prisma.sql`hiato DESC NULLS LAST`,
+  // Whitelist de ordenação — coluna e direção NUNCA vêm do usuário direto.
+  // NULLS LAST nas duas direções: município sem jovens tem IEE nulo e não
+  // deve encabeçar nem o ranking crescente nem o decrescente.
+  const COLUNAS = {
+    total: Prisma.sql`total`,
+    iee:   Prisma.sql`iee`,
+    hiato: Prisma.sql`hiato`,
   }
-  const orderSql = orderMap[filters.orderBy] ?? orderMap.total
+  const DIRECOES = {
+    asc:  Prisma.sql`ASC NULLS LAST`,
+    desc: Prisma.sql`DESC NULLS LAST`,
+  }
+
+  const coluna   = COLUNAS[filters.orderBy]  ?? COLUNAS.total
+  const direcao  = DIRECOES[filters.direcao] ?? DIRECOES.desc
+  const orderSql = Prisma.sql`${coluna} ${direcao}`
 
   // iee e hiato são derivados no SQL, e não no JS, para que o ORDER BY alcance os dois.
   // NULLIF mantém o IEE nulo quando não há jovens, em vez de estourar a divisão.

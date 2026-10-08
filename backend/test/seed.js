@@ -34,6 +34,7 @@ function travaDeSeguranca() {
 export async function seed() {
   travaDeSeguranca()
 
+  await prisma.importacao.deleteMany()
   await prisma.eleitoradoPerfil.deleteMany()
   await prisma.municipio.deleteMany()
   await prisma.faixaEtaria.deleteMany()

@@ -49,15 +49,23 @@ router.get('/indicadores/municipios', handler((f, req) => {
     ? req.query.orderBy
     : 'total'
 
+  const direcao = ['asc', 'desc'].includes(req.query.direcao)
+    ? req.query.direcao
+    : 'desc'
+
   const minEleitores = Number(req.query.minEleitores)
   return cruzamentos.getIndicadoresMunicipios({
     ...f,
     orderBy,
+    direcao,
     minEleitores: Number.isInteger(minEleitores) && minEleitores >= 0
       ? minEleitores
       : undefined,
   })
 }))
+
+// ── Procedência dos dados ──────────────────────────────────────────────────
+router.get('/importacao', handler(() => service.getImportacao()))
 
 // ── Exterior (ZZ) ──────────────────────────────────────────────────────────
 router.get('/exterior', handler(f => cruzamentos.getExterior(f)))

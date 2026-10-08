@@ -133,6 +133,23 @@ describe('ordenação do ranking', () => {
     assert.deepEqual(nomes(await cruzamentos.getIndicadoresMunicipios({ ...opcoes, orderBy: 'hiato' })),
       ['BETA', 'GAMA', 'ALFA'])
   })
+
+  it('inverte a ordem quando a direção é asc', async () => {
+    assert.deepEqual(nomes(await cruzamentos.getIndicadoresMunicipios({ ...opcoes, orderBy: 'total', direcao: 'asc' })),
+      ['GAMA', 'ALFA', 'BETA'])
+  })
+
+  // O município sem jovens tem IEE nulo. Em ordem crescente ele seria o
+  // primeiro se os nulos não fossem empurrados para o fim.
+  it('mantém os nulos no fim também na ordem crescente', async () => {
+    assert.deepEqual(nomes(await cruzamentos.getIndicadoresMunicipios({ ...opcoes, orderBy: 'iee', direcao: 'asc' })),
+      ['BETA', 'ALFA', 'GAMA'])
+  })
+
+  it('usa decrescente quando a direção é desconhecida', async () => {
+    const invalida = await cruzamentos.getIndicadoresMunicipios({ ...opcoes, orderBy: 'total', direcao: 'DROP TABLE' })
+    assert.deepEqual(nomes(invalida), ['BETA', 'ALFA', 'GAMA'])
+  })
 })
 
 describe('cruzamento gênero × faixa etária', () => {
@@ -147,5 +164,57 @@ describe('cruzamento gênero × faixa etária', () => {
 
     const soma = linhas.reduce((acc, l) => acc + l.total, 0)
     assert.equal(soma, ESPERADO.totalBrasil)
+  })
+})
+
+describe('procedência dos dados', () => {
+  it('devolve null quando nenhuma carga foi registrada', async () => {
+    assert.equal(await eleitorado.getImportacao(), null)
+  })
+
+  it('devolve a carga mais recente, com bytes serializável em JSON', async () => {
+    await prisma.importacao.createMany({
+      data: [
+        { arquivo: 'antigo.csv', bytes: 100n, sha256: 'aaa', baixadoEm: new Date('2026-01-01'),
+          carregadoEm: new Date('2026-01-02'), linhasLidas: 1, registrosGravados: 1, municipios: 1 },
+        { arquivo: 'novo.csv',   bytes: 2285954062n, sha256: 'bbb', baixadoEm: new Date('2026-05-24'),
+          carregadoEm: new Date('2026-05-25'), linhasLidas: 2, registrosGravados: 2, municipios: 2 },
+      ],
+    })
+
+    const r = await eleitorado.getImportacao()
+    assert.equal(r.arquivo, 'novo.csv')
+    assert.equal(r.sha256, 'bbb')
+
+    // bytes é BigInt no banco; precisa sair como Number ou o JSON.stringify quebra.
+    assert.equal(typeof r.bytes, 'number')
+    assert.equal(r.bytes, 2285954062)
+    assert.doesNotThrow(() => JSON.stringify(r))
+  })
+})
+
+// A tela guarda só o id do município na URL; reconstruir o rótulo ao abrir o
+// link depende desta busca.
+describe('busca de município por id', () => {
+  it('devolve o município pedido', async () => {
+    const r = await eleitorado.getMunicipios({ municipioId: municipios.alfa.id })
+    assert.equal(r.length, 1)
+    assert.equal(r[0].nome, 'ALFA')
+    assert.equal(r[0].uf, 'SP')
+  })
+
+  it('alcança localidade do exterior, que a busca por nome exclui', async () => {
+    const r = await eleitorado.getMunicipios({ municipioId: municipios.lisboa.id })
+    assert.equal(r[0].nome, 'LISBOA')
+    assert.equal(r[0].uf, 'ZZ')
+  })
+
+  it('devolve vazio para id inexistente, em vez de erro', async () => {
+    assert.deepEqual(await eleitorado.getMunicipios({ municipioId: 999999 }), [])
+  })
+
+  it('sem id, segue excluindo o exterior da busca por nome', async () => {
+    const nomes = (await eleitorado.getMunicipios({})).map(m => m.nome)
+    assert.ok(!nomes.includes('LISBOA'))
   })
 })
