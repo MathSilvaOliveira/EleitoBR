@@ -2,11 +2,16 @@ import {
   BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, ReferenceLine, Legend,
 } from 'recharts'
-import { useTema } from '../../context/TemaContext'
+import { useTema }    from '../../context/TemaContext'
+import { useFiltros } from '../../context/FiltrosContext'
 import { numeroCompacto, numeroPtBR } from '../../utils/formatos'
 
 export function PiramideEtariaChart({ data }) {
   const { paleta } = useTema()
+  const { genero } = useFiltros()
+
+  // Gênero é o eixo deste gráfico, então ele não se filtra: só destaca a seleção.
+  const opacidade = g => (!genero || genero === g ? 1 : 0.2)
 
   const chartData = data
     .filter(d => Number(d.codigo) > 0)   // remove faixa 'inválida'
@@ -59,8 +64,10 @@ export function PiramideEtariaChart({ data }) {
         <Legend formatter={v => (
           <span style={{ color: paleta.eixo, fontSize: 12 }}>{v}</span>
         )} />
-        <Bar dataKey="Masculino" stackId="p" fill={paleta.masculino} />
-        <Bar dataKey="Feminino"  stackId="p" fill={paleta.feminino} />
+        <Bar dataKey="Masculino" stackId="p" fill={paleta.masculino}
+             fillOpacity={opacidade('M')} />
+        <Bar dataKey="Feminino"  stackId="p" fill={paleta.feminino}
+             fillOpacity={opacidade('F')} />
       </BarChart>
     </ResponsiveContainer>
   )

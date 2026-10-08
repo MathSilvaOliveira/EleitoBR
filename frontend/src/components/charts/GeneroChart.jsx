@@ -1,23 +1,26 @@
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import { useTema } from '../../context/TemaContext'
-import { numeroCompacto, numeroPtBR } from '../../utils/formatos'
-
-const LABELS = { F: 'Feminino', M: 'Masculino', NI: 'Não informado' }
+import { useTema }    from '../../context/TemaContext'
+import { useFiltros } from '../../context/FiltrosContext'
+import { numeroCompacto, numeroPtBR, GENERO_ROTULO } from '../../utils/formatos'
 
 export function GeneroChart({ data }) {
-  const { paleta } = useTema()
+  const { paleta }            = useTema()
+  const { genero, setGenero } = useFiltros()
 
   const CORES = { F: paleta.feminino, M: paleta.masculino, NI: paleta.naoInf }
   const total = data.reduce((acc, d) => acc + d.total, 0)
 
   const chartData = data.map(d => ({
-    name:  LABELS[d.genero] ?? d.genero,
-    value: d.total,
-    pct:   total > 0 ? ((d.total / total) * 100).toFixed(1) : 0,
-    cor:   CORES[d.genero] ?? paleta.naoInf,
+    genero: d.genero,
+    name:   GENERO_ROTULO[d.genero] ?? d.genero,
+    value:  d.total,
+    pct:    total > 0 ? ((d.total / total) * 100).toFixed(1) : 0,
+    cor:    CORES[d.genero] ?? paleta.naoInf,
   }))
+
+  const selecionada = chartData.find(d => d.genero === genero)
 
   return (
     <div className="relative">
@@ -31,11 +34,21 @@ export function GeneroChart({ data }) {
             innerRadius={82}
             outerRadius={140}
             paddingAngle={2}
+            cursor="pointer"
+            onClick={(_, i) => {
+              const alvo = chartData[i]?.genero
+              setGenero(alvo === genero ? null : alvo)
+            }}
             label={({ name, pct }) => `${name} ${pct}%`}
             labelLine
           >
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={entry.cor} stroke="none" />
+              <Cell
+                key={i}
+                fill={entry.cor}
+                stroke="none"
+                fillOpacity={!genero || entry.genero === genero ? 1 : 0.25}
+              />
             ))}
           </Pie>
           <Tooltip
@@ -57,9 +70,11 @@ export function GeneroChart({ data }) {
       <div className="absolute top-[46%] left-1/2 -translate-x-1/2 -translate-y-1/2
                       text-center pointer-events-none">
         <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">
-          {numeroCompacto(total)}
+          {numeroCompacto(selecionada ? selecionada.value : total)}
         </p>
-        <p className="text-xs text-gray-500 dark:text-gray-400">eleitores</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {selecionada ? selecionada.name.toLowerCase() : 'eleitores'}
+        </p>
       </div>
     </div>
   )

@@ -2,11 +2,16 @@ import {
   BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
-import { useTema } from '../../context/TemaContext'
+import { useTema }    from '../../context/TemaContext'
+import { useFiltros } from '../../context/FiltrosContext'
 import { abreviaEscolaridade, numeroCompacto, numeroPtBR } from '../../utils/formatos'
 
 export function EscolaridadeGeneroChart({ data }) {
   const { paleta } = useTema()
+  const { genero } = useFiltros()
+
+  // Gênero é o eixo deste gráfico, então ele não se filtra: só destaca a seleção.
+  const opacidade = g => (!genero || genero === g ? 1 : 0.2)
 
   const chartData = data.map(d => ({
     label:      abreviaEscolaridade(d.descricao),
@@ -48,10 +53,12 @@ export function EscolaridadeGeneroChart({ data }) {
          formatter={v => (
           <span style={{ color: paleta.eixo, fontSize: 12 }}>{v}</span>
         )} />
-        <Bar dataKey="Feminino"  stackId="g" fill={paleta.feminino} />
-        <Bar dataKey="Masculino" stackId="g" fill={paleta.masculino} />
+        <Bar dataKey="Feminino"  stackId="g" fill={paleta.feminino}
+             fillOpacity={opacidade('F')} />
+        <Bar dataKey="Masculino" stackId="g" fill={paleta.masculino}
+             fillOpacity={opacidade('M')} />
         <Bar dataKey="Não inf."  stackId="g" fill={paleta.naoInf}
-             radius={[4, 4, 0, 0]} />
+             fillOpacity={opacidade('NI')} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

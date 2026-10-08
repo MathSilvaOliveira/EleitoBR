@@ -13,14 +13,14 @@ import { RankingMunicipios }        from './components/RankingMunicipios'
 import { ExteriorPanel }            from './components/ExteriorPanel'
 
 function App() {
-  const { apiParams, rotulo, uf } = useFiltros()
+  const { apiParams, apiParamsSemGenero, rotulo, rotuloLocal, uf, genero } = useFiltros()
 
   const resumo       = useApi('/api/resumo', apiParams)
-  const genero       = useApi('/api/genero', apiParams)
-  const regioes      = useApi('/api/regioes')
-  const piramide     = useApi('/api/cruzamentos/genero-faixa', apiParams)
+  const distGenero   = useApi('/api/genero', apiParamsSemGenero)
+  const regioes      = useApi('/api/regioes', { genero })
+  const piramide     = useApi('/api/cruzamentos/genero-faixa', apiParamsSemGenero)
   const heatmap      = useApi('/api/cruzamentos/escolaridade-faixa', apiParams)
-  const escGenero    = useApi('/api/cruzamentos/escolaridade-genero', apiParams)
+  const escGenero    = useApi('/api/cruzamentos/escolaridade-genero', apiParamsSemGenero)
 
   const temSelecao = resumo.data?.total_selecao != null
 
@@ -78,7 +78,7 @@ function App() {
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartCard
             titulo="Pirâmide Etária do Eleitorado"
-            subtitulo={`Gênero × faixa etária · ${rotulo}`}
+            subtitulo={`Gênero × faixa etária · ${rotuloLocal}`}
             info="Cruzamento entre gênero e faixa etária. Barras à esquerda: eleitores do gênero masculino; à direita: feminino. A assimetria entre os lados revela a predominância feminina no eleitorado, acentuada nas faixas mais idosas pela maior longevidade das mulheres."
             loading={piramide.loading}
             error={piramide.error}
@@ -89,13 +89,13 @@ function App() {
 
           <ChartCard
             titulo="Distribuição por Gênero"
-            subtitulo={rotulo}
-            info="Composição do eleitorado por gênero na seleção atual. 'Não informado' corresponde a registros sem declaração de gênero na base do TSE."
-            loading={genero.loading}
-            error={genero.error}
+            subtitulo={`Clique em uma fatia para filtrar todo o dashboard pelo gênero · ${rotuloLocal}`}
+            info="Composição do eleitorado por gênero na seleção atual. 'Não informado' corresponde a registros sem declaração de gênero na base do TSE. Funciona como controle de drill-down: clicar em uma fatia aplica o filtro globalmente; clicar novamente remove. O donut não se filtra a si mesmo, para continuar permitindo a troca de seleção."
+            loading={distGenero.loading}
+            error={distGenero.error}
             altura={480}
           >
-            <GeneroChart data={genero.data ?? []} />
+            <GeneroChart data={distGenero.data ?? []} />
           </ChartCard>
         </section>
 
@@ -114,7 +114,7 @@ function App() {
 
           <ChartCard
             titulo="Escolaridade × Gênero"
-            subtitulo={`Composição por gênero em cada grau de instrução · ${rotulo}`}
+            subtitulo={`Composição por gênero em cada grau de instrução · ${rotuloLocal}`}
             info="Barras empilhadas: cada barra é um grau de instrução e os segmentos mostram a divisão por gênero, revelando em quais níveis educacionais cada gênero predomina."
             loading={escGenero.loading}
             error={escGenero.error}

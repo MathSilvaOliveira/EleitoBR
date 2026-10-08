@@ -111,7 +111,7 @@ export async function getEscolaridadePorGenero(filters = {}) {
 }
 
 export async function getIndicadoresMunicipios(filters = {}) {
-  const whereSql      = buildPerfilWhereSql({ uf: filters.uf })
+  const whereSql      = buildPerfilWhereSql({ uf: filters.uf, genero: filters.genero })
   const limit         = filters.limit        ?? 15
   const minEleitores  = filters.minEleitores ?? 10_000
 

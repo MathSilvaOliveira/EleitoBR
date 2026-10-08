@@ -24,7 +24,7 @@ router.get('/resumo',       handler(f => service.getResumo(f)))
 router.get('/faixa-etaria', handler(f => service.getFaixaEtaria(f)))
 router.get('/genero',       handler(f => service.getGenero(f)))
 router.get('/escolaridade', handler(f => service.getEscolaridade(f)))
-router.get('/regioes',      handler(() => service.getRegioes()))
+router.get('/regioes',      handler(f => service.getRegioes(f)))
 
 // ── Municípios ─────────────────────────────────────────────────────────────
 router.get('/municipios', handler((f, req) =>

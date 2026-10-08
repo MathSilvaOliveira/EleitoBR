@@ -9,7 +9,7 @@ import {
 // ─── RESUMO ──────────────────────────────────────────────────────────────────
 
 export async function getResumo(filters = {}) {
-  const temFiltro = Boolean(filters.uf || filters.municipioId)
+  const temFiltro = Boolean(filters.uf || filters.municipioId || filters.genero)
 
   const [aggrBrasil, aggrExterior, aggrSelecao, totalMunicipios, ufs] =
     await Promise.all([
@@ -142,7 +142,7 @@ export async function getMunicipios(filters = {}) {
 // ─── RANKING DE MUNICÍPIOS ───────────────────────────────────────────────────
 
 export async function getRankingMunicipios(filters = {}) {
-  const whereSql = buildPerfilWhereSql({ uf: filters.uf })
+  const whereSql = buildPerfilWhereSql({ uf: filters.uf, genero: filters.genero })
   const limit    = filters.limit ?? 15
 
   const rows = await prisma.$queryRaw`
@@ -165,12 +165,14 @@ export async function getRankingMunicipios(filters = {}) {
 
 // ─── REGIÕES (UFs) ────────────────────────────────────────────────────────────
 
-export async function getRegioes() {
+export async function getRegioes(filters = {}) {
+  const whereSql = buildPerfilWhereSql({ genero: filters.genero })
+
   const rows = await prisma.$queryRaw`
     SELECT m."uf", SUM(e."quantidade")::int AS total
     FROM   "EleitoradoPerfil" e
     INNER  JOIN "Municipio" m ON e."municipioId" = m."id"
-    WHERE  m."uf" <> ${UF_EXTERIOR}
+    WHERE  ${whereSql}
     GROUP  BY m."uf"
     ORDER  BY total DESC
   `

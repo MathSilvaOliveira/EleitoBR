@@ -1,17 +1,22 @@
 import { Prisma } from '@prisma/client'
 
 export const UF_EXTERIOR = 'ZZ'
+export const GENEROS = ['M', 'F', 'NI']
 
-export function buildPerfilWhere({ uf = null, municipioId = null } = {}) {
-  if (municipioId) return { municipioId }
-  if (uf)          return { municipio: { uf } }
-  return { municipio: { uf: { not: UF_EXTERIOR } } }
+export function buildPerfilWhere({ uf = null, municipioId = null, genero = null } = {}) {
+  const base = genero ? { genero } : {}
+
+  if (municipioId) return { ...base, municipioId }
+  if (uf)          return { ...base, municipio: { uf } }
+  return { ...base, municipio: { uf: { not: UF_EXTERIOR } } }
 }
 
-export function buildPerfilWhereSql({ uf = null, municipioId = null } = {}) {
-  if (municipioId) return Prisma.sql`e."municipioId" = ${municipioId}`
-  if (uf)          return Prisma.sql`m."uf" = ${uf}`
-  return Prisma.sql`m."uf" <> ${UF_EXTERIOR}`
+export function buildPerfilWhereSql({ uf = null, municipioId = null, genero = null } = {}) {
+  const generoSql = genero ? Prisma.sql`AND e."genero" = ${genero}` : Prisma.empty
+
+  if (municipioId) return Prisma.sql`e."municipioId" = ${municipioId} ${generoSql}`
+  if (uf)          return Prisma.sql`m."uf" = ${uf} ${generoSql}`
+  return Prisma.sql`m."uf" <> ${UF_EXTERIOR} ${generoSql}`
 }
 
 /**
@@ -37,6 +42,12 @@ export function parseFilters(query) {
     }
   }
 
+  let genero = query.genero?.toString().trim().toUpperCase() || null
+  if (genero && !GENEROS.includes(genero)) {
+    errors.push(`genero inválido: "${query.genero}" (esperado M, F ou NI)`)
+    genero = null
+  }
+
   let limit = null
   if (query.limit != null && query.limit !== '') {
     limit = Number(query.limit)
@@ -46,5 +57,5 @@ export function parseFilters(query) {
     }
   }
 
-  return { filters: { uf, municipioId, limit }, errors }
+  return { filters: { uf, municipioId, genero, limit }, errors }
 }

@@ -17,11 +17,12 @@ const INFO = `IEE (Índice de Envelhecimento Eleitoral) = eleitores 60+ ÷ eleit
   `Municípios com menos de 10 mil eleitores são omitidos para evitar distorção estatística.`
 
 export function RankingMunicipios() {
-  const { uf, municipio, setMunicipio } = useFiltros()
+  const { uf, municipio, genero, setMunicipio } = useFiltros()
   const [orderBy, setOrderBy] = useState('total')
 
   const { data, loading, error } = useApi('/api/indicadores/municipios', {
     uf: uf === 'ZZ' ? null : uf,   // indicadores não se aplicam ao exterior
+    genero,
     orderBy,
     limit: 15,
   })

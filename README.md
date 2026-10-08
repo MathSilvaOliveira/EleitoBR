@@ -45,7 +45,7 @@ Padrão em camadas (MVC adaptado a API): **rotas** validam e delegam, **services
 
 ## Endpoints da API
 
-Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior) e `?municipioId=123`.
+Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior), `?municipioId=123` e `?genero=M|F|NI`.
 
 | Endpoint | Descrição |
 |---|---|
@@ -61,6 +61,8 @@ Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior) e `?municipioId=123`.
 | `GET /api/cruzamentos/escolaridade-genero` | Escolaridade × gênero (empilhado) |
 | `GET /api/indicadores/municipios?orderBy=total\|iee\|hiato&minEleitores=` | IEE e Hiato Instrucional por município |
 | `GET /api/exterior?limit=` | Perfil consolidado do eleitorado no exterior |
+
+**Convenção para o gênero:** os gráficos que têm gênero como eixo próprio (donut de gênero, pirâmide etária e escolaridade × gênero) não aplicam `genero` a si mesmos — mantêm a comparação completa e apenas destacam a seleção. Caso contrário o donut viraria uma fatia única e deixaria de servir como controle, e os dois comparativos perderiam o sentido.
 
 **Convenção para o exterior (ZZ):** agregados nacionais excluem ZZ; `uf=ZZ` consulta exclusivamente o exterior; o total do exterior é exposto separadamente em `/api/resumo` (`total_exterior`).
 
@@ -128,7 +130,7 @@ curl "http://localhost:3001/api/exterior"
 ## Funcionalidades do dashboard
 
 - **Filtros dinâmicos globais**: UF (incluindo Exterior/ZZ) + autocomplete de município com debounce; toda a tela reage.
-- **Drill-down**: clique em uma barra de estado ou em uma linha do ranking para filtrar o dashboard inteiro; clique novamente para desfazer.
+- **Drill-down**: clique em uma barra de estado, em uma linha do ranking ou em uma fatia do donut de gênero para filtrar o dashboard inteiro; clique novamente para desfazer.
 - **Cruzamentos**: pirâmide etária (gênero × idade), mapa de calor (escolaridade × idade), barras empilhadas (escolaridade × gênero).
 - **Indicadores originais**: IEE e Hiato Instrucional por município, com ordenação server-side.
 - **Exterior (ZZ)**: painel dedicado com total, gênero e maiores localidades no mundo; botão para analisar o exterior em todos os gráficos.

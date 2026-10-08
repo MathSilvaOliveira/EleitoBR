@@ -44,3 +44,5 @@ export function bucketFaixa(codigo) {
   const b = BUCKETS.find(b => idadeInicial >= b.min && idadeInicial <= b.max)
   return b?.rotulo ?? null
 }
+
+export const GENERO_ROTULO = { F: 'Feminino', M: 'Masculino', NI: 'Não informado' }

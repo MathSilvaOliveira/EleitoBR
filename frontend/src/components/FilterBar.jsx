@@ -5,7 +5,7 @@ import { useFiltros } from '../context/FiltrosContext'
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 export function FilterBar({ ufs = [] }) {
-  const { uf, municipio, setUf, setMunicipio, limpar, rotulo } = useFiltros()
+  const { uf, municipio, genero, setUf, setMunicipio, limpar, rotulo } = useFiltros()
 
   const [busca, setBusca]           = useState('')
   const [sugestoes, setSugestoes]   = useState([])
@@ -55,7 +55,7 @@ useEffect(() => {
         <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {rotulo}
         </span>
-        {(uf || municipio) && (
+        {(uf || municipio || genero) && (
           <button
             onClick={limpar}
             className="text-xs px-2 py-0.5 rounded-full
