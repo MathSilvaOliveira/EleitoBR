@@ -33,7 +33,7 @@ const PALETAS = {
 }
 
 function temaInicial() {
-  const salvo = localStorage.getItem('eleitosp-tema')
+  const salvo = localStorage.getItem('eleitobr-tema')
   if (salvo === 'dark' || salvo === 'light') return salvo
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches
     ? 'dark'
@@ -45,7 +45,7 @@ export function TemaProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', tema === 'dark')
-    localStorage.setItem('eleitosp-tema', tema)
+    localStorage.setItem('eleitobr-tema', tema)
   }, [tema])
 
   const value = useMemo(() => ({

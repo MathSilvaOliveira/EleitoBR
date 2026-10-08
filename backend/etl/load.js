@@ -1,5 +1,5 @@
 /**
- * ETL — EleitoSP
+ * ETL — EleitoBR
  *
  * Carrega os dados públicos do TSE (Tribunal Superior Eleitoral) sobre o
  * perfil demográfico do eleitorado de todos os estados brasileiros no banco
@@ -154,7 +154,7 @@ async function run() {
   const startTime = Date.now()
 
   console.log('╔══════════════════════════════════════════════╗')
-  console.log('║          EleitoSP — ETL iniciado             ║')
+  console.log('║          EleitoBR — ETL iniciado             ║')
   console.log('╚══════════════════════════════════════════════╝')
   console.log(`Arquivo : ${CSV_PATH}`)
   console.log(`Escopo  : todos os estados`)

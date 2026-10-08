@@ -14,7 +14,7 @@ app.use(requestLogger)
 app.use('/api', router)
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', projeto: 'EleitoSP' })
+  res.json({ status: 'ok', projeto: 'EleitoBR' })
 })
 
 app.use((err, req, res, next) => {
