@@ -119,55 +119,59 @@ export async function getIndicadoresMunicipios(filters = {}) {
   const orderMap = {
     total: Prisma.sql`total DESC`,
     iee:   Prisma.sql`iee DESC NULLS LAST`,
-    hiato: Prisma.sql`hiato DESC`,
+    hiato: Prisma.sql`hiato DESC NULLS LAST`,
   }
   const orderSql = orderMap[filters.orderBy] ?? orderMap.total
 
+  // iee e hiato são derivados no SQL, e não no JS, para que o ORDER BY alcance os dois.
+  // NULLIF mantém o IEE nulo quando não há jovens, em vez de estourar a divisão.
   const rows = await prisma.$queryRaw`
+    WITH base AS (
+      SELECT
+        m."id",
+        m."nome",
+        m."uf",
+        SUM(e."quantidade")::int AS total,
+        SUM(CASE WHEN f."codigo" ~ '^[0-9]+$'
+                  AND f."codigo"::int BETWEEN 1600 AND 2124
+                 THEN e."quantidade" ELSE 0 END)::int AS jovens,
+        SUM(CASE WHEN f."codigo" ~ '^[0-9]+$'
+                  AND f."codigo"::int >= 6064
+                 THEN e."quantidade" ELSE 0 END)::int AS idosos,
+        SUM(CASE WHEN esc."codigo" IN ('1','2','3')
+                 THEN e."quantidade" ELSE 0 END)::int AS baixa_instrucao,
+        SUM(CASE WHEN esc."codigo" IN ('7','8')
+                 THEN e."quantidade" ELSE 0 END)::int AS instrucao_superior
+      FROM  "EleitoradoPerfil" e
+      INNER JOIN "Municipio"    m   ON e."municipioId"    = m."id"
+      INNER JOIN "FaixaEtaria"  f   ON e."faixaEtariaId"  = f."id"
+      INNER JOIN "Escolaridade" esc ON e."escolaridadeId" = esc."id"
+      WHERE ${whereSql}
+      GROUP BY m."id", m."nome", m."uf"
+      HAVING SUM(e."quantidade") >= ${minEleitores}
+    )
     SELECT
-      m."id",
-      m."nome",
-      m."uf",
-      SUM(e."quantidade")::int AS total,
-      SUM(CASE WHEN f."codigo" ~ '^[0-9]+$'
-                AND f."codigo"::int BETWEEN 1600 AND 2124
-               THEN e."quantidade" ELSE 0 END)::int AS jovens,
-      SUM(CASE WHEN f."codigo" ~ '^[0-9]+$'
-                AND f."codigo"::int >= 6064
-               THEN e."quantidade" ELSE 0 END)::int AS idosos,
-      SUM(CASE WHEN esc."codigo" IN ('1','2','3')
-               THEN e."quantidade" ELSE 0 END)::int AS baixa_instrucao,
-      SUM(CASE WHEN esc."codigo" IN ('7','8')
-               THEN e."quantidade" ELSE 0 END)::int AS instrucao_superior
-    FROM  "EleitoradoPerfil" e
-    INNER JOIN "Municipio"    m   ON e."municipioId"    = m."id"
-    INNER JOIN "FaixaEtaria"  f   ON e."faixaEtariaId"  = f."id"
-    INNER JOIN "Escolaridade" esc ON e."escolaridadeId" = esc."id"
-    WHERE ${whereSql}
-    GROUP BY m."id", m."nome", m."uf"
-    HAVING SUM(e."quantidade") >= ${minEleitores}
+      base.*,
+      ROUND(idosos::numeric / NULLIF(jovens, 0), 2)::float8 AS iee,
+      ROUND(((baixa_instrucao - instrucao_superior)::numeric
+             / NULLIF(total, 0)) * 100, 1)::float8 AS hiato
+    FROM base
     ORDER BY ${orderSql}
     LIMIT ${limit}
   `
 
   return rows.map(r => {
-    const total  = Number(r.total)
-    const jovens = Number(r.jovens)
-    const idosos = Number(r.idosos)
-    const baixa  = Number(r.baixa_instrucao)
-    const sup    = Number(r.instrucao_superior)
+    const total = Number(r.total)
+    const baixa = Number(r.baixa_instrucao)
+    const sup   = Number(r.instrucao_superior)
 
     return {
       id:     r.id,
       nome:   r.nome,
       uf:     r.uf,
       total,
-      // IEE: razão idosos/jovens; null quando não há jovens (evita Infinity)
-      iee:    jovens > 0 ? Number((idosos / jovens).toFixed(2)) : null,
-      // Hiato em pontos percentuais, positivo = predomínio de baixa instrução
-      hiato:  total > 0
-        ? Number((((baixa - sup) / total) * 100).toFixed(1))
-        : null,
+      iee:    r.iee,
+      hiato:  r.hiato,
       pct_baixa_instrucao:    total > 0 ? Number(((baixa / total) * 100).toFixed(1)) : null,
       pct_instrucao_superior: total > 0 ? Number(((sup   / total) * 100).toFixed(1)) : null,
     }
