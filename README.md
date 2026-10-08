@@ -102,10 +102,8 @@ docker compose up --build
 
 **3. Aplique o schema no banco** (primeira vez)
 ```bash
-docker compose exec backend npx prisma db push
+docker compose exec backend npx prisma migrate deploy
 ```
-
-> **Nota sobre migrations:** o histórico em `prisma/migrations` está dessincronizado do schema (a migration `init` não contém a coluna `zona`; o schema evoluiu via `db push`). Para regularizar em um banco novo: `docker compose exec backend npx prisma migrate dev --name sync_schema`. Enquanto isso não for feito, use `db push` — **não** use `migrate deploy`.
 
 **4. Carregue os dados do TSE**
 
@@ -124,6 +122,24 @@ curl "http://localhost:3001/api/cruzamentos/genero-faixa?uf=SP"
 curl "http://localhost:3001/api/indicadores/municipios?orderBy=iee&limit=5"
 curl "http://localhost:3001/api/exterior"
 ```
+
+---
+
+## Testes
+
+Testes de integração dos services, no executor nativo do Node 20 — sem dependência adicional. Rodam contra um banco próprio, criado pelas mesmas migrations da aplicação:
+
+```bash
+docker compose exec db psql -U postgres -c "CREATE DATABASE eleitobr_test;"
+docker compose exec -e DATABASE_URL=postgresql://postgres:postgres@db:5432/eleitobr_test backend npx prisma migrate deploy
+docker compose exec -e DATABASE_URL=postgresql://postgres:postgres@db:5432/eleitobr_test backend npm test
+```
+
+A massa de teste (`backend/test/seed.js`) é pequena e de números redondos, para que todo valor esperado possa ser conferido à mão — inclusive o IEE e o Hiato, cujos valores aparecem calculados nos comentários do arquivo.
+
+O seed **recusa rodar** se `DATABASE_URL` não apontar para um banco terminado em `_test`, evitando apagar a base de trabalho por engano.
+
+A suíte cobre: exclusão do exterior (ZZ) dos agregados nacionais, composição dos filtros `uf` + `municipioId` + `genero`, cálculo e ordenação de IEE e Hiato (incluindo IEE nulo em município sem jovens) e validação de parâmetros na borda.
 
 ---
 

@@ -6,7 +6,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "etl": "node etl/load.js",
-    "test": "echo 'sem testes ainda' && exit 0"
+    "test": "node --test test/"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
