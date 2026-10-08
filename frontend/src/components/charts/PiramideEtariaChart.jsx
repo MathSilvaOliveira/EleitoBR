@@ -4,7 +4,8 @@ import {
 } from 'recharts'
 import { useTema }    from '../../context/TemaContext'
 import { useFiltros } from '../../context/FiltrosContext'
-import { numeroCompacto, numeroPtBR } from '../../utils/formatos'
+import { numeroCompacto } from '../../utils/formatos'
+import { TooltipTotal, ORDEM_GENERO } from './TooltipTotal'
 
 export function PiramideEtariaChart({ data }) {
   const { paleta } = useTema()
@@ -51,14 +52,7 @@ export function PiramideEtariaChart({ data }) {
         />
         <ReferenceLine x={0} stroke={paleta.eixo} />
         <Tooltip
-          formatter={(v, nome) => [numeroPtBR(Math.abs(v)), nome]}
-          contentStyle={{
-            backgroundColor: paleta.tooltipBg,
-            border: `1px solid ${paleta.borda}`,
-            borderRadius: 8,
-            color: paleta.tooltipTxt,
-          }}
-          labelStyle={{ color: paleta.tooltipTxt, fontWeight: 600 }}
+          content={<TooltipTotal paleta={paleta} ordem={ORDEM_GENERO} />}
           cursor={{ fill: paleta.grade, opacity: 0.35 }}
         />
         <Legend formatter={v => (

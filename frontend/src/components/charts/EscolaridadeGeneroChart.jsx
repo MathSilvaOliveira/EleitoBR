@@ -4,7 +4,8 @@ import {
 } from 'recharts'
 import { useTema }    from '../../context/TemaContext'
 import { useFiltros } from '../../context/FiltrosContext'
-import { abreviaEscolaridade, numeroCompacto, numeroPtBR } from '../../utils/formatos'
+import { abreviaEscolaridade, numeroCompacto } from '../../utils/formatos'
+import { TooltipTotal, ORDEM_GENERO } from './TooltipTotal'
 
 export function EscolaridadeGeneroChart({ data }) {
   const { paleta } = useTema()
@@ -38,14 +39,7 @@ export function EscolaridadeGeneroChart({ data }) {
           stroke={paleta.grade}
         />
         <Tooltip
-          formatter={(v, nome) => [numeroPtBR(v), nome]}
-          contentStyle={{
-            backgroundColor: paleta.tooltipBg,
-            border: `1px solid ${paleta.borda}`,
-            borderRadius: 8,
-            color: paleta.tooltipTxt,
-          }}
-          labelStyle={{ color: paleta.tooltipTxt, fontWeight: 600 }}
+          content={<TooltipTotal paleta={paleta} ordem={ORDEM_GENERO} />}
           cursor={{ fill: paleta.grade, opacity: 0.35 }}
         />
         <Legend
