@@ -6,7 +6,7 @@ import {
 } from '../../utils/formatos'
 
 export function HeatmapEscolaridadeFaixa({ data }) {
-  const { tema } = useTema()
+  const { paleta } = useTema()
   const [hover, setHover] = useState(null)   // { esc, faixa, valor, pct }
 
   const { linhas, maxPct, total } = useMemo(() => {
@@ -45,7 +45,7 @@ export function HeatmapEscolaridadeFaixa({ data }) {
 
   if (linhas.length === 0) return null
 
-  const corBase = tema === 'dark' ? '96, 165, 250' : '37, 99, 235'  // azul RGB
+  const corBase = paleta.sequencialRgb
 
   return (
     <div className="overflow-x-auto pb-3">

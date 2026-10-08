@@ -15,6 +15,9 @@ const PALETAS = {
     destaque:   '#1d4ed8',
     suave:      '#93c5fd',
     acento:     '#8b5cf6',
+    // Rampa de magnitude (mapa de calor). Violeta, e não azul, porque azul
+    // identifica o gênero masculino em outros gráficos da mesma tela.
+    sequencialRgb: '124, 58, 237',
   },
   dark: {
     eixo:       '#9ca3af',
@@ -29,6 +32,7 @@ const PALETAS = {
     destaque:   '#60a5fa',
     suave:      '#1e40af',
     acento:     '#a78bfa',
+    sequencialRgb: '167, 139, 250',
   },
 }
 
