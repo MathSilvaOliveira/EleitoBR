@@ -63,6 +63,3 @@ export function TooltipTotal({ active, payload, label, paleta, ordem = [] }) {
     </div>
   )
 }
-
-// Mesma sequência das legendas dos gráficos de gênero.
-export const ORDEM_GENERO = ['Feminino', 'Masculino', 'Não inf.', 'Não informado']

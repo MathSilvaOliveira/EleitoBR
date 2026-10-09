@@ -51,7 +51,8 @@ function buscarMunicipio(id) {
 }
 
 export function FiltrosProvider({ children }) {
-  const inicial = useRef(lerUrl()).current
+  // useState com inicializador preguiçoso: lerUrl() roda uma vez, na montagem.
+  const [inicial] = useState(lerUrl)
 
   const [uf, setUfState]               = useState(inicial.uf)
   const [municipio, setMunicipioState] = useState(null)

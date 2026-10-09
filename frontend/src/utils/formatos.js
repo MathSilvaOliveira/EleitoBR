@@ -57,3 +57,6 @@ export function tamanhoArquivo(bytes) {
   if (gb >= 1) return `${gb.toFixed(1).replace('.', ',')} GB`
   return `${(bytes / 1_000_000).toFixed(0)} MB`
 }
+
+// Sequência das legendas dos gráficos de gênero, usada para ordenar o tooltip.
+export const ORDEM_GENERO = ['Feminino', 'Masculino', 'Não inf.', 'Não informado']

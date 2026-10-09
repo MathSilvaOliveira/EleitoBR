@@ -4,8 +4,8 @@ import {
 } from 'recharts'
 import { useTema }    from '../../context/TemaContext'
 import { useFiltros } from '../../context/FiltrosContext'
-import { numeroCompacto } from '../../utils/formatos'
-import { TooltipTotal, ORDEM_GENERO } from './TooltipTotal'
+import { numeroCompacto, ORDEM_GENERO } from '../../utils/formatos'
+import { TooltipTotal } from './TooltipTotal'
 
 export function PiramideEtariaChart({ data }) {
   const { paleta } = useTema()
