@@ -1,6 +1,6 @@
-import { useApi }      from '../hooks/useApi'
-import { ThemeToggle } from './ui/Primitivas'
-import { dataPtBR }    from '../utils/formatos'
+import { useApi }   from '../hooks/useApi'
+import { LinkTela, ThemeToggle } from './ui/Primitivas'
+import { dataPtBR } from '../utils/formatos'
 
 const TELAS = [
   { caminho: '/',         rotulo: 'Painel geral' },
@@ -8,12 +8,6 @@ const TELAS = [
 ]
 
 export function Cabecalho({ rota, navegar }) {
-  function aoClicar(e, caminho) {
-    if (e.ctrlKey || e.metaKey || e.shiftKey) return
-    e.preventDefault()
-    navegar(caminho)
-  }
-
   return (
     <header className="bg-blue-900 dark:bg-gray-950 text-white shadow-md
                        border-b border-blue-950 dark:border-gray-800">
@@ -36,10 +30,10 @@ export function Cabecalho({ rota, navegar }) {
 
         <nav aria-label="Telas" className="flex self-stretch gap-2">
           {TELAS.map(t => (
-            <a
+            <LinkTela
               key={t.caminho}
-              href={t.caminho}
-              onClick={e => aoClicar(e, t.caminho)}
+              para={t.caminho}
+              navegar={navegar}
               aria-current={rota === t.caminho ? 'page' : undefined}
               className={`flex items-center px-3 text-sm font-medium
                           border-b-2 transition-colors
@@ -49,7 +43,7 @@ export function Cabecalho({ rota, navegar }) {
                      dark:text-gray-400 dark:hover:text-gray-100`}`}
             >
               {t.rotulo}
-            </a>
+            </LinkTela>
           ))}
         </nav>
 

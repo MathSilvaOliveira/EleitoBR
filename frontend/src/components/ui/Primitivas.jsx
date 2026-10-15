@@ -85,6 +85,48 @@ export function ChartCard({ titulo, subtitulo, info, loading, error, altura = 42
   )
 }
 
+/** Link entre telas: troca pela History API, mas ctrl/cmd+clique ainda abre outra aba. */
+export function LinkTela({ para, navegar, children, ...resto }) {
+  function aoClicar(e) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return
+    e.preventDefault()
+    navegar(para)
+  }
+
+  return <a href={para} onClick={aoClicar} {...resto}>{children}</a>
+}
+
+/** Grupo de botões de escolha única (abas, unidade de medida). */
+export function Segmentado({ opcoes, valor, aoMudar, rotulo }) {
+  return (
+    <div
+      role="group"
+      aria-label={rotulo}
+      className="inline-flex max-w-full overflow-x-auto gap-1 rounded-lg p-1 border
+                 bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+    >
+      {opcoes.map(o => (
+        <button
+          key={o.valor}
+          type="button"
+          aria-pressed={valor === o.valor}
+          aria-disabled={o.desabilitado || undefined}
+          title={o.desabilitado ? 'Em breve' : undefined}
+          onClick={() => !o.desabilitado && aoMudar?.(o.valor)}
+          className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors
+            ${valor === o.valor
+              ? 'font-medium bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
+              : o.desabilitado
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'}`}
+        >
+          {o.rotulo}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 /** Botão de alternância claro/escuro. */
 export function ThemeToggle() {
   const { tema, alternar } = useTema()

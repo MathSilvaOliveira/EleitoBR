@@ -14,7 +14,9 @@ function App() {
       <Cabecalho rota={rota} navegar={navegar} />
 
       <main className="px-4 sm:px-8 py-8 space-y-8 max-w-screen-xl mx-auto">
-        {rota === '/comparar' ? <Comparar /> : <PainelGeral />}
+        {rota === '/comparar'
+          ? <Comparar navegar={navegar} />
+          : <PainelGeral navegar={navegar} />}
       </main>
 
       <footer className="text-center text-xs text-gray-400 dark:text-gray-500 py-6">

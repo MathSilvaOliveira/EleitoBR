@@ -3,6 +3,7 @@ import { useFiltros } from '../context/FiltrosContext'
 import { KPICard }    from '../components/KPICard'
 import { FilterBar }  from '../components/FilterBar'
 import { ChartCard }  from '../components/ui/Primitivas'
+import { CabecalhoPagina }          from '../components/CabecalhoPagina'
 import { PiramideEtariaChart }      from '../components/charts/PiramideEtariaChart'
 import { HeatmapEscolaridadeFaixa } from '../components/charts/HeatmapEscolaridadeFaixa'
 import { EscolaridadeGeneroChart }  from '../components/charts/EscolaridadeGeneroChart'
@@ -11,7 +12,7 @@ import { RegiaoChart }              from '../components/charts/RegiaoChart'
 import { RankingMunicipios }        from '../components/RankingMunicipios'
 import { ExteriorPanel }            from '../components/ExteriorPanel'
 
-export function PainelGeral() {
+export function PainelGeral({ navegar }) {
   const { apiParams, apiParamsSemGenero, rotulo, rotuloLocal, uf, genero } = useFiltros()
 
   const resumo       = useApi('/api/resumo', apiParams)
@@ -25,6 +26,21 @@ export function PainelGeral() {
 
   return (
     <>
+      <CabecalhoPagina
+        caminho={[{ rotulo: 'Painel geral' }]}
+        titulo="Perfil demográfico do eleitorado"
+        subtitulo="Brasil, estados e municípios · gênero, idade e escolaridade · Dados Abertos TSE"
+      >
+        <button
+          type="button"
+          onClick={() => navegar('/comparar')}
+          className="text-sm px-4 py-2 rounded-lg font-medium
+                     bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+        >
+          Comparar municípios →
+        </button>
+      </CabecalhoPagina>
+
       {/* Filtros dinâmicos */}
       <FilterBar ufs={regioes.data ?? []} />
 

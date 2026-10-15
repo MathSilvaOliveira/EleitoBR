@@ -11,7 +11,7 @@ import { numeroPtBR } from '../../utils/formatos'
  * Recharts ordena por valor, e as linhas trocam de lugar de uma categoria
  * para outra — o que atrapalha justamente a comparação que o tooltip serve.
  */
-export function TooltipTotal({ active, payload, label, paleta, ordem = [] }) {
+export function TooltipTotal({ active, payload, label, paleta, ordem = [], formato = numeroPtBR }) {
   if (!active || !payload?.length) return null
 
   const posicao = nome => {
@@ -45,7 +45,7 @@ export function TooltipTotal({ active, payload, label, paleta, ordem = [] }) {
 
       {itens.map(i => (
         <p key={i.nome} style={{ ...linha, color: i.cor }}>
-          {i.nome} : {numeroPtBR(i.valor)}
+          {i.nome} : {formato(i.valor)}
         </p>
       ))}
 
@@ -58,7 +58,7 @@ export function TooltipTotal({ active, payload, label, paleta, ordem = [] }) {
           fontWeight: 600,
         }}
       >
-        Total : {numeroPtBR(total)}
+        Total : {formato(total)}
       </p>
     </div>
   )

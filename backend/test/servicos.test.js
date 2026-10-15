@@ -111,6 +111,13 @@ describe('indicadores IEE e Hiato', () => {
     assert.equal(alfa.total, 500)
     assert.equal(alfa.iee,   3)
   })
+
+  it('devolve só o município pedido por id, sem o corte de minEleitores', async () => {
+    const linhas = await cruzamentos.getIndicadoresMunicipios({ municipioId: municipios.gama.id })
+    assert.equal(linhas.length, 1)
+    assert.equal(linhas[0].nome,  'GAMA')
+    assert.equal(linhas[0].total, 500)
+  })
 })
 
 // Regressão: orderBy=iee e orderBy=hiato apontavam para colunas inexistentes

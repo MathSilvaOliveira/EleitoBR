@@ -111,9 +111,12 @@ export async function getEscolaridadePorGenero(filters = {}) {
 }
 
 export async function getIndicadoresMunicipios(filters = {}) {
-  const whereSql      = buildPerfilWhereSql({ uf: filters.uf, genero: filters.genero })
+  const whereSql      = buildPerfilWhereSql(filters)
   const limit         = filters.limit        ?? 15
-  const minEleitores  = filters.minEleitores ?? 10_000
+
+  // O corte de população vale para o ranking. Quem pede um município pelo id
+  // quer os indicadores dele, ainda que instáveis.
+  const minEleitores  = filters.municipioId ? 0 : (filters.minEleitores ?? 10_000)
 
   // Whitelist de ordenação — coluna e direção NUNCA vêm do usuário direto.
   // NULLS LAST nas duas direções: município sem jovens tem IEE nulo e não

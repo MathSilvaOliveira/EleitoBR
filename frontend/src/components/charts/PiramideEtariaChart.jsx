@@ -4,15 +4,24 @@ import {
 } from 'recharts'
 import { useTema }    from '../../context/TemaContext'
 import { useFiltros } from '../../context/FiltrosContext'
-import { numeroCompacto, ORDEM_GENERO } from '../../utils/formatos'
+import { numeroCompacto, decimalPtBR, percentualPtBR, ORDEM_GENERO } from '../../utils/formatos'
+import { escalaLinear } from '../../utils/estatisticas'
 import { TooltipTotal } from './TooltipTotal'
 
-export function PiramideEtariaChart({ data }) {
+// `maximo` fixa o eixo: na comparação, as duas pirâmides recebem o mesmo.
+export function PiramideEtariaChart({
+  data, percentual = false, maximo, altura = 480, destacarGenero = true,
+}) {
   const { paleta } = useTema()
   const { genero } = useFiltros()
 
   // Gênero é o eixo deste gráfico, então ele não se filtra: só destaca a seleção.
-  const opacidade = g => (!genero || genero === g ? 1 : 0.2)
+  const ativo     = destacarGenero ? genero : null
+  const opacidade = g => (!ativo || ativo === g ? 1 : 0.2)
+
+  const rotuloEixo = percentual
+    ? v => `${decimalPtBR(Math.abs(v), Number.isInteger(v) ? 0 : 1)}%`
+    : v => numeroCompacto(Math.abs(v))
 
   const chartData = data
     .filter(d => Number(d.codigo) > 0)   // remove faixa 'inválida'
@@ -23,12 +32,17 @@ export function PiramideEtariaChart({ data }) {
     }))
     .reverse()                            // mais velhos no topo
 
-  const maxAbs = Math.max(
+  const eixo   = maximo != null ? escalaLinear(maximo, 3) : null
+  const marcas = eixo
+    ? [...eixo.marcas.slice(1).map(m => -m).reverse(), ...eixo.marcas]
+    : undefined
+
+  const maxAbs = eixo?.topo ?? Math.max(
     ...chartData.map(d => Math.max(Math.abs(d.Masculino), d.Feminino)), 1,
   )
 
   return (
-    <ResponsiveContainer width="100%" height={480}>
+    <ResponsiveContainer width="100%" height={altura}>
       <BarChart
         layout="vertical"
         data={chartData}
@@ -39,7 +53,8 @@ export function PiramideEtariaChart({ data }) {
         <XAxis
           type="number"
           domain={[-maxAbs, maxAbs]}
-          tickFormatter={v => numeroCompacto(Math.abs(v))}
+          ticks={marcas}
+          tickFormatter={rotuloEixo}
           tick={{ fontSize: 11, fill: paleta.eixo }}
           stroke={paleta.grade}
         />
@@ -52,7 +67,13 @@ export function PiramideEtariaChart({ data }) {
         />
         <ReferenceLine x={0} stroke={paleta.eixo} />
         <Tooltip
-          content={<TooltipTotal paleta={paleta} ordem={ORDEM_GENERO} />}
+          content={(
+            <TooltipTotal
+              paleta={paleta}
+              ordem={ORDEM_GENERO}
+              formato={percentual ? percentualPtBR : undefined}
+            />
+          )}
           cursor={{ fill: paleta.grade, opacity: 0.35 }}
         />
         <Legend formatter={v => (

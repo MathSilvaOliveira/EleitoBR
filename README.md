@@ -21,18 +21,25 @@ Plataforma web para análise interativa e visualização do perfil demográfico 
 
 ```
 frontend/src
-├── pages/          PainelGeral (dashboard) · Comparar (em construção)
+├── pages/          PainelGeral (dashboard) · Comparar (dois municípios lado a lado)
 ├── context/        FiltrosContext (drill-down global) · TemaContext (dark/light)
 ├── hooks/          useApi (fetch com params, AbortController, refetch automático)
 │                   useRota (troca de tela pela History API, sem router)
+│                   useComparacao (par A/B na URL) · usePerfilMunicipio
 ├── components/
 │   ├── Cabecalho   Navegação entre telas + data da base TSE
-│   ├── ui/         ChartCard, InfoTooltip, Skeleton, ErroCarga, ThemeToggle
-│   ├── charts/     Pirâmide etária, Heatmap, Barras empilhadas, Donut, UFs
+│   ├── CabecalhoPagina     Caminho, título e ações de cada tela
+│   ├── ui/         ChartCard, InfoTooltip, Skeleton, ErroCarga, ThemeToggle,
+│   │               Segmentado, LinkTela
+│   ├── charts/     Pirâmide etária, Heatmap, Barras empilhadas, Donut, UFs,
+│   │               Escolaridade comparada
+│   ├── comparar/   Seletor A/B, resumo, frase-síntese e Visão geral
+│   ├── BuscaMunicipio      Autocomplete de município (FilterBar e Comparar)
 │   ├── FilterBar   Filtros dinâmicos (UF + autocomplete de município)
 │   ├── RankingMunicipios   Tabela de indicadores (IEE, Hiato Instrucional)
 │   └── ExteriorPanel       Painel do eleitorado no exterior (ZZ)
-└── utils/          formatos.js (formatação e macro-faixas etárias)
+└── utils/          formatos.js (formatação e faixas etárias)
+                    estatisticas.js (idade mediana, escala de eixos)
 
 backend/src
 ├── lib/            prisma.js · logger.js (JSON estruturado) · queryFilters.js
@@ -63,7 +70,7 @@ Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior), `?municipioId=123` e `
 | `GET /api/cruzamentos/genero-faixa` | Gênero × faixa etária (pirâmide) |
 | `GET /api/cruzamentos/escolaridade-faixa` | Escolaridade × faixa etária (heatmap) |
 | `GET /api/cruzamentos/escolaridade-genero` | Escolaridade × gênero (empilhado) |
-| `GET /api/indicadores/municipios?orderBy=total\|iee\|hiato&direcao=desc\|asc&minEleitores=` | IEE e Hiato Instrucional por município |
+| `GET /api/indicadores/municipios?orderBy=total\|iee\|hiato&direcao=desc\|asc&minEleitores=` | IEE e Hiato Instrucional por município; com `municipioId`, só aquele município e sem o corte de `minEleitores` |
 | `GET /api/exterior?limit=` | Perfil consolidado do eleitorado no exterior |
 | `GET /api/importacao` | Procedência: arquivo, tamanho, data e SHA-256 do CSV em uso |
 
@@ -76,7 +83,15 @@ Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior), `?municipioId=123` e `
 - **IEE — Índice de Envelhecimento Eleitoral** = eleitores 60+ ÷ eleitores 16–24. IEE > 1: idosos superam jovens no eleitorado.
 - **Hiato Instrucional (p.p.)** = %baixa instrução (analfabeto, lê e escreve, fundamental incompleto) − %instrução superior (incompleta ou completa). Positivo: predomínio de baixa instrução.
 
-Municípios com menos de 10.000 eleitores são omitidos do ranking por padrão (`minEleitores`), evitando distorção de razões em populações pequenas.
+Municípios com menos de 10.000 eleitores são omitidos do ranking por padrão (`minEleitores`), evitando distorção de razões em populações pequenas. Na tela de comparação eles aparecem, com aviso de que IEE e Hiato ficam instáveis.
+
+### Comparação de municípios
+
+A tela **Comparar** coloca dois municípios lado a lado (`/comparar?a=&b=`), sempre na mesma escala: em percentual do eleitorado de cada um, por padrão, ou em número de eleitores.
+
+- **Idade mediana (estimada)**: o TSE publica a idade em faixas, então a mediana é calculada como em dados agrupados: localiza-se a faixa que contém metade do eleitorado e interpola-se linearmente dentro dela, supondo as idades distribuídas por igual na faixa.
+- **Pirâmide comparada**: faixas de 5 anos, com 15–17 (inclui os alistados aos 15, que votam aos 16) e 18–19 separadas, e topo aberto em 90+.
+- **Superior completo**: percentual de eleitores com instrução superior completa sobre o total do município.
 
 ---
 
@@ -159,7 +174,7 @@ A massa de teste (`backend/test/seed.js`) é pequena e de números redondos, par
 
 O seed **recusa rodar** se `DATABASE_URL` não apontar para um banco terminado em `_test`, evitando apagar a base de trabalho por engano.
 
-A suíte cobre: exclusão do exterior (ZZ) dos agregados nacionais, composição dos filtros `uf` + `municipioId` + `genero`, cálculo e ordenação de IEE e Hiato (incluindo IEE nulo em município sem jovens) e validação de parâmetros na borda.
+A suíte cobre: exclusão do exterior (ZZ) dos agregados nacionais, composição dos filtros `uf` + `municipioId` + `genero`, cálculo e ordenação de IEE e Hiato (incluindo IEE nulo em município sem jovens e consulta de um município pelo id) e validação de parâmetros na borda.
 
 ---
 
