@@ -66,6 +66,10 @@ export function FiltrosProvider({ children }) {
   // histórico — senão voltar uma vez não sai do lugar.
   const vindoDaUrl = useRef(true)
 
+  // Último recorte gravado na URL. A troca de tela também dispara popstate e
+  // não pode ser confundida com uma mudança de filtro.
+  const naUrl = useRef(null)
+
   const setUf = useCallback(u => {
     setUfState(u)
     setMunicipioState(null)
@@ -103,6 +107,7 @@ export function FiltrosProvider({ children }) {
   useEffect(() => {
     function aoNavegar() {
       const alvo = lerUrl()
+      if (JSON.stringify(alvo) === naUrl.current) return
       vindoDaUrl.current = true
       setUfState(alvo.uf)
       setGenero(alvo.genero)
@@ -117,7 +122,10 @@ export function FiltrosProvider({ children }) {
   useEffect(() => {
     const metodo = vindoDaUrl.current ? 'replaceState' : 'pushState'
     vindoDaUrl.current = false
-    escreverUrl({ uf, municipioId: municipio?.id ?? idPendente, genero }, metodo)
+
+    const selecao = { uf, municipioId: municipio?.id ?? idPendente, genero }
+    naUrl.current = JSON.stringify(selecao)
+    escreverUrl(selecao, metodo)
   }, [uf, municipio, genero, idPendente])
 
   const value = useMemo(() => {

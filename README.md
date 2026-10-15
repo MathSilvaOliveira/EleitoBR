@@ -21,9 +21,12 @@ Plataforma web para análise interativa e visualização do perfil demográfico 
 
 ```
 frontend/src
+├── pages/          PainelGeral (dashboard) · Comparar (em construção)
 ├── context/        FiltrosContext (drill-down global) · TemaContext (dark/light)
 ├── hooks/          useApi (fetch com params, AbortController, refetch automático)
+│                   useRota (troca de tela pela History API, sem router)
 ├── components/
+│   ├── Cabecalho   Navegação entre telas + data da base TSE
 │   ├── ui/         ChartCard, InfoTooltip, Skeleton, ErroCarga, ThemeToggle
 │   ├── charts/     Pirâmide etária, Heatmap, Barras empilhadas, Donut, UFs
 │   ├── FilterBar   Filtros dinâmicos (UF + autocomplete de município)
