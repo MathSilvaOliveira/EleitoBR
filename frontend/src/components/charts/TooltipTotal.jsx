@@ -20,6 +20,7 @@ export function TooltipTotal({ active, payload, label, paleta, ordem = [], forma
   }
 
   const itens = payload
+    .filter(p => p.type !== 'none')
     .map(p => ({
       nome:  p.name,
       cor:   p.color ?? p.fill,

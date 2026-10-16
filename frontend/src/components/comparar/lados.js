@@ -1,6 +1,7 @@
 export const LADOS = {
   a: {
     rotulo: 'Município A',
+    cor:    'var(--color-violet-500)',
     linha:  'bg-violet-500',
     borda:  'border-t-violet-500',
     campo:  'border-l-violet-500',
@@ -9,6 +10,7 @@ export const LADOS = {
   },
   b: {
     rotulo: 'Município B',
+    cor:    'var(--color-emerald-500)',
     linha:  'bg-emerald-500',
     borda:  'border-t-emerald-500',
     campo:  'border-l-emerald-500',

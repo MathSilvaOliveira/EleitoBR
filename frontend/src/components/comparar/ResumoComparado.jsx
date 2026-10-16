@@ -1,52 +1,13 @@
 import { LADOS } from './lados'
-import {
-  numeroPtBR, decimalPtBR, percentualPtBR, comSinal,
-} from '../../utils/formatos'
-
-const INDICADORES = [
-  {
-    chave: 'total', titulo: 'Eleitores',
-    formato:   numeroPtBR,
-    // Abaixo de 1×, percentual: "0,0×" não diz nada.
-    diferenca: (v, o) => (v >= o
-      ? `${decimalPtBR(v / o, v / o >= 10 ? 0 : 1)}× o outro`
-      : `${percentualPtBR((v / o) * 100, v / o >= 0.1 ? 0 : 2)} do outro`),
-  },
-  {
-    chave: 'iee', titulo: 'IEE',
-    formato:   v => decimalPtBR(v, 2),
-    diferenca: (v, o) => `${comSinal(v - o, 2)} vs outro`,
-  },
-  {
-    chave: 'hiato', titulo: 'Hiato (p.p.)',
-    formato:   comSinal,
-    diferenca: (v, o) => `${comSinal(v - o)} p.p. vs outro`,
-  },
-  {
-    chave: 'mulheres', titulo: 'Mulheres',
-    formato:   percentualPtBR,
-    diferenca: (v, o) => `${comSinal(v - o)} p.p. vs outro`,
-  },
-  {
-    chave: 'mediana', titulo: 'Idade mediana',
-    formato:   v => `${decimalPtBR(v)} anos`,
-    diferenca: (v, o) => `${comSinal(v - o)} anos vs outro`,
-  },
-  {
-    chave: 'superior', titulo: 'Superior completo',
-    formato:   percentualPtBR,
-    diferenca: (v, o) => `${comSinal(v - o)} p.p. vs outro`,
-  },
-]
 
 // Mesmo corte do ranking de municípios.
 const MIN_ELEITORES = 10_000
 
-export function ResumoComparado({ lado, perfil, outro }) {
+export function ResumoComparado({ lado, perfil, outro, indicadores }) {
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {INDICADORES.map(ind => {
+        {indicadores.map(ind => {
           const v = perfil[ind.chave]
           const o = outro[ind.chave]
           const comparavel = v != null && o != null
@@ -64,7 +25,7 @@ export function ResumoComparado({ lado, perfil, outro }) {
                 <p className="text-xl font-bold whitespace-nowrap text-gray-900 dark:text-gray-50">
                   {v != null ? ind.formato(v) : '—'}
                 </p>
-                {comparavel && v > o && ind.formato(v) !== ind.formato(o) && (
+                {ind.selo !== false && comparavel && v > o && ind.formato(v) !== ind.formato(o) && (
                   <span className={`text-[10px] font-semibold uppercase px-1.5 rounded
                                     ${LADOS[lado].selo}`}>
                     maior

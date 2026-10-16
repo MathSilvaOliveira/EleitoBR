@@ -4,14 +4,16 @@ import { useParametroUrl } from '../hooks/useParametroUrl'
 import { CabecalhoPagina } from '../components/CabecalhoPagina'
 import { Segmentado }      from '../components/ui/Primitivas'
 import { SeletorMunicipios } from '../components/comparar/SeletorMunicipios'
-import { VisaoGeral }        from '../components/comparar/VisaoGeral'
+import { Comparacao }        from '../components/comparar/Comparacao'
 
 const ABAS = [
   { valor: 'geral',        rotulo: 'Visão geral' },
-  { valor: 'idade',        rotulo: 'Idade',         desabilitado: true },
+  { valor: 'idade',        rotulo: 'Idade' },
   { valor: 'escolaridade', rotulo: 'Escolaridade',  desabilitado: true },
   { valor: 'social',       rotulo: 'Perfil social', desabilitado: true },
 ]
+
+const ABAS_ATIVAS = ABAS.filter(o => !o.desabilitado).map(o => o.valor)
 
 const ESCALAS = [
   { valor: 'percentual', rotulo: '%' },
@@ -25,6 +27,7 @@ const BOTAO = `text-sm px-4 py-2 rounded-lg font-medium border transition-colors
 export function Comparar({ navegar }) {
   const { a, b, escolher, trocar } = useComparacao()
   const [escala, setEscala] = useParametroUrl('escala', 'percentual', ESCALAS.map(e => e.valor))
+  const [aba, setAba] = useParametroUrl('aba', 'geral', ABAS_ATIVAS, { navega: true })
 
   return (
     <>
@@ -43,13 +46,13 @@ export function Comparar({ navegar }) {
       <section className="space-y-4">
         <SeletorMunicipios a={a} b={b} aoEscolher={escolher} aoTrocar={trocar} />
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Segmentado rotulo="Aspecto comparado" opcoes={ABAS} valor="geral" />
+          <Segmentado rotulo="Aspecto comparado" opcoes={ABAS} valor={aba} aoMudar={setAba} />
           <Segmentado rotulo="Unidade" opcoes={ESCALAS} valor={escala} aoMudar={setEscala} />
         </div>
       </section>
 
       {a && b
-        ? <VisaoGeral a={a} b={b} percentual={escala === 'percentual'} />
+        ? <Comparacao a={a} b={b} aba={aba} percentual={escala === 'percentual'} />
         : (
           <div className="card text-center py-16 text-sm text-gray-500 dark:text-gray-400">
             Escolha os dois municípios acima para ver a comparação.

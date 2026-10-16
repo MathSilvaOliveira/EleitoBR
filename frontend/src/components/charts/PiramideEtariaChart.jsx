@@ -1,6 +1,6 @@
 import {
-  BarChart, Bar, XAxis, YAxis,
-  Tooltip, ResponsiveContainer, ReferenceLine, Legend,
+  BarChart, Bar, XAxis, YAxis, LabelList,
+  Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { useTema }    from '../../context/TemaContext'
 import { useFiltros } from '../../context/FiltrosContext'
@@ -20,26 +20,26 @@ export function PiramideEtariaChart({
   const opacidade = g => (!ativo || ativo === g ? 1 : 0.2)
 
   const rotuloEixo = percentual
-    ? v => `${decimalPtBR(Math.abs(v), Number.isInteger(v) ? 0 : 1)}%`
-    : v => numeroCompacto(Math.abs(v))
+    ? v => `${decimalPtBR(v, Number.isInteger(v) ? 0 : 1)}%`
+    : numeroCompacto
 
-  const chartData = data
-    .filter(d => Number(d.codigo) > 0)   // remove faixa 'inválida'
+  const validas = data.filter(d => Number(d.codigo) > 0)   // remove faixa 'inválida'
+
+  const { topo, marcas } = escalaLinear(
+    maximo ?? Math.max(...validas.map(d => Math.max(d.M, d.F)), 1), 3,
+  )
+  const vao     = topo * 0.18
+  const lateral = marcas.slice(1).map(m => m + vao)
+
+  const chartData = validas
     .map(d => ({
-      faixa:     d.descricao.replace(' anos', '').replace(' ou mais', '+'),
+      faixa:     d.descricao.replace(' anos', '').replace(' ou mais', '+').replace(' a ', '–'),
       Masculino: -d.M,                    // negativo → lado esquerdo
       Feminino:  d.F,
+      vaoM:      -vao,
+      vaoF:      vao,
     }))
     .reverse()                            // mais velhos no topo
-
-  const eixo   = maximo != null ? escalaLinear(maximo, 3) : null
-  const marcas = eixo
-    ? [...eixo.marcas.slice(1).map(m => -m).reverse(), ...eixo.marcas]
-    : undefined
-
-  const maxAbs = eixo?.topo ?? Math.max(
-    ...chartData.map(d => Math.max(Math.abs(d.Masculino), d.Feminino)), 1,
-  )
 
   return (
     <ResponsiveContainer width="100%" height={altura}>
@@ -47,25 +47,18 @@ export function PiramideEtariaChart({
         layout="vertical"
         data={chartData}
         stackOffset="sign"
-        margin={{ top: 4, right: 24, left: 8, bottom: 4 }}
+        margin={{ top: 4, right: 16, left: 16, bottom: 4 }}
         barCategoryGap={2}
       >
         <XAxis
           type="number"
-          domain={[-maxAbs, maxAbs]}
-          ticks={marcas}
-          tickFormatter={rotuloEixo}
+          domain={[-(topo + vao), topo + vao]}
+          ticks={[...lateral.map(m => -m).reverse(), ...lateral]}
+          tickFormatter={v => rotuloEixo(Number((Math.abs(v) - vao).toFixed(6)))}
           tick={{ fontSize: 11, fill: paleta.eixo }}
           stroke={paleta.grade}
         />
-        <YAxis
-          type="category"
-          dataKey="faixa"
-          width={78}
-          tick={{ fontSize: 11, fill: paleta.eixo }}
-          stroke={paleta.grade}
-        />
-        <ReferenceLine x={0} stroke={paleta.eixo} />
+        <YAxis type="category" dataKey="faixa" hide />
         <Tooltip
           content={(
             <TooltipTotal
@@ -76,9 +69,24 @@ export function PiramideEtariaChart({
           )}
           cursor={{ fill: paleta.grade, opacity: 0.35 }}
         />
-        <Legend formatter={v => (
-          <span style={{ color: paleta.eixo, fontSize: 12 }}>{v}</span>
-        )} />
+        <Legend
+          itemSorter={item => (item.value === 'Masculino' ? 0 : 1)}
+          formatter={v => (
+            <span style={{ color: paleta.eixo, fontSize: 12 }}>{v}</span>
+          )}
+        />
+        <Bar dataKey="vaoM" stackId="p" fill="none" legendType="none" tooltipType="none" />
+        <Bar dataKey="vaoF" stackId="p" fill="none" legendType="none" tooltipType="none">
+          <LabelList
+            dataKey="faixa"
+            content={({ x, y, height, value }) => (
+              <text x={x} y={y + height / 2} textAnchor="middle" dominantBaseline="central"
+                    fontSize={11} fill={paleta.eixo}>
+                {value}
+              </text>
+            )}
+          />
+        </Bar>
         <Bar dataKey="Masculino" stackId="p" fill={paleta.masculino}
              fillOpacity={opacidade('M')} />
         <Bar dataKey="Feminino"  stackId="p" fill={paleta.feminino}

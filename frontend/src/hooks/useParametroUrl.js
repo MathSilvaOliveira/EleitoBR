@@ -13,7 +13,7 @@ function ler(nome, padrao, valores) {
  * continua respondendo às mudanças de filtro, que são o que o usuário espera
  * desfazer. O valor padrão é omitido da URL, mantendo-a curta.
  */
-export function useParametroUrl(nome, padrao, valores) {
+export function useParametroUrl(nome, padrao, valores, { navega = false } = {}) {
   const [valor, setValor] = useState(() => ler(nome, padrao, valores))
 
   useEffect(() => {
@@ -31,5 +31,10 @@ export function useParametroUrl(nome, padrao, valores) {
     return () => window.removeEventListener('popstate', aoNavegar)
   })
 
-  return [valor, setValor]
+  function mudar(novo) {
+    if (navega && novo !== valor) window.history.pushState({}, '', window.location.href)
+    setValor(novo)
+  }
+
+  return [valor, mudar]
 }
