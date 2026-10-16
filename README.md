@@ -63,7 +63,7 @@ Filtros comuns: `?uf=SP` (sigla, aceita `ZZ` = exterior), `?municipioId=123` e `
 | `GET /api/faixa-etaria` | Distribuição por faixa etária |
 | `GET /api/genero` | Distribuição por gênero |
 | `GET /api/escolaridade` | Distribuição por grau de instrução |
-| `GET /api/municipios?q=&uf=&limit=` | Busca leve de municípios (autocomplete) |
+| `GET /api/municipios?q=&uf=&limit=` | Busca leve de municípios (autocomplete), sem diferenciar acento; nome exato primeiro |
 | `GET /api/municipios?municipioId=` | Busca por id; alcança também o exterior |
 | `GET /api/municipios/ranking?uf=&limit=` | Top municípios por eleitores |
 | `GET /api/regioes` | Total por UF (exclui ZZ) |

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Curve, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { useTema }    from '../../context/TemaContext'
 import { useFiltros } from '../../context/FiltrosContext'
@@ -53,8 +53,15 @@ export function GeneroChart({ data, compacto = false }) {
             }}
             onMouseEnter={compacto ? (_, i) => setFoco(chartData[i]?.genero) : undefined}
             onMouseLeave={compacto ? () => setFoco(null) : undefined}
-            label={compacto ? false : ({ name, pct }) => `${name} ${percentualPtBR(pct)}`}
-            labelLine={!compacto}
+            label={compacto ? false : ({ name, pct }) => (
+              pct >= 1 ? `${name} ${percentualPtBR(pct)}` : null
+            )}
+            labelLine={compacto ? false : ({ pct, points, stroke }) => (
+              pct >= 1
+                ? <Curve points={points} stroke={stroke} fill="none" type="linear"
+                         className="recharts-pie-label-line" />
+                : null
+            )}
           >
             {chartData.map((entry, i) => (
               <Cell

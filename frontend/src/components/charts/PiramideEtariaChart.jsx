@@ -26,7 +26,7 @@ export function PiramideEtariaChart({
   const chartData = data
     .filter(d => Number(d.codigo) > 0)   // remove faixa 'inválida'
     .map(d => ({
-      faixa:     d.descricao.replace(' anos', ''),
+      faixa:     d.descricao.replace(' anos', '').replace(' ou mais', '+'),
       Masculino: -d.M,                    // negativo → lado esquerdo
       Feminino:  d.F,
     }))

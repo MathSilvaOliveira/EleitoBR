@@ -133,15 +133,25 @@ export async function getMunicipios(filters = {}) {
     })
   }
 
-  const where = {}
-
-  where.uf = filters.uf ? filters.uf : { not: UF_EXTERIOR }
   if (filters.q) {
-    where.nome = { contains: filters.q, mode: 'insensitive' }
+    const termo = filters.q.replace(/[\\%_]/g, '\\$&')
+    const ufSql = filters.uf
+      ? Prisma.sql`"uf" = ${filters.uf}`
+      : Prisma.sql`"uf" <> ${UF_EXTERIOR}`
+
+    return prisma.$queryRaw`
+      SELECT "id", "nome", "uf"
+      FROM   "Municipio"
+      WHERE  ${ufSql} AND unaccent("nome") ILIKE unaccent(${`%${termo}%`})
+      ORDER  BY unaccent("nome") ILIKE unaccent(${termo}) DESC,
+                unaccent("nome") ILIKE unaccent(${`${termo}%`}) DESC,
+                "nome"
+      LIMIT  ${filters.limit ?? 20}
+    `
   }
 
   return prisma.municipio.findMany({
-    where,
+    where:   { uf: filters.uf ? filters.uf : { not: UF_EXTERIOR } },
     select:  { id: true, nome: true, uf: true },
     orderBy: { nome: 'asc' },
     take:    filters.limit ?? 20,

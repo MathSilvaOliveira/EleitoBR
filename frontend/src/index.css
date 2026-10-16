@@ -12,6 +12,12 @@ body {
   margin: 0;
 }
 
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /* Transição suave ao alternar tema */
 body, .card, header {
   transition: background-color 160ms ease, border-color 160ms ease;

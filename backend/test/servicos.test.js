@@ -225,3 +225,33 @@ describe('busca de município por id', () => {
     assert.ok(!nomes.includes('LISBOA'))
   })
 })
+
+describe('busca de município por nome', () => {
+  let acentuado
+
+  before(async () => {
+    acentuado = await prisma.municipio.create({ data: { codigo: '0004', nome: 'SÃO ALFA', uf: 'SP' } })
+  })
+  after(async () => { await prisma.municipio.delete({ where: { id: acentuado.id } }) })
+
+  const nomes = async filtros => (await eleitorado.getMunicipios(filtros)).map(m => m.nome)
+
+  it('ignora acento no nome e no termo buscado', async () => {
+    assert.deepEqual(await nomes({ q: 'sao' }),  ['SÃO ALFA'])
+    assert.deepEqual(await nomes({ q: 'álfa' }), ['ALFA', 'SÃO ALFA'])
+  })
+
+  it('põe o nome exato antes dos que só contêm o termo', async () => {
+    assert.deepEqual(await nomes({ q: 'alfa' }), ['ALFA', 'SÃO ALFA'])
+  })
+
+  it('respeita a UF e segue excluindo o exterior', async () => {
+    assert.deepEqual(await nomes({ q: 'a', uf: 'RJ' }), ['GAMA'])
+    assert.ok(!(await nomes({ q: 'lisboa' })).includes('LISBOA'))
+  })
+
+  it('trata % e _ como texto, não como curinga', async () => {
+    assert.deepEqual(await nomes({ q: '%' }), [])
+    assert.deepEqual(await nomes({ q: '_' }), [])
+  })
+})
