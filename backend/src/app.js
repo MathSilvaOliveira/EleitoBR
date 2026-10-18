@@ -1,36 +1,32 @@
 import express from 'express'
 import cors    from 'cors'
 import router  from './routes/index.js'
+import { logger, requestLogger } from './lib/logger.js'
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+
+// Log estruturado de todas as requisições (método, rota, status, latência)
+app.use(requestLogger)
+
 app.use('/api', router)
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', projeto: 'EleitoSP' })
+  res.json({ status: 'ok', projeto: 'EleitoBR' })
 })
 
-/**
- * Middleware global de tratamento de erros.
- *
- * Deve ser registrado APÓS todas as rotas — Express identifica um error
- * middleware pela assinatura de 4 parâmetros (err, req, res, next) e só
- * o invoca quando next(err) é chamado em algum handler anterior.
- *
- * O stack trace é exposto apenas em ambiente de desenvolvimento, evitando
- * vazamento de informações internas ao cliente em produção — princípio de
- * defesa em profundidade (OWASP Top Ten, 2021).
- *
- * Referências:
- *   FIELDING, R. T. Architectural Styles... UCI, 2000. sec. 6.3.
- *   OWASP. OWASP Top Ten. 2021.
- */
 app.use((err, req, res, next) => {
   const status = err.status ?? err.statusCode ?? 500
 
-  console.error(`[EleitoSP API Error] ${req.method} ${req.path}`, err.message)
+  logger.error('unhandled_error', {
+    method: req.method,
+    path:   req.originalUrl,
+    status,
+    error:  err.name,
+    detail: err.message,
+  })
 
   res.status(status).json({
     error:   err.name    ?? 'InternalServerError',

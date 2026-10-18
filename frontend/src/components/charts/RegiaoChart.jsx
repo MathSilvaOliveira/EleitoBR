@@ -2,55 +2,61 @@ import {
   BarChart, Bar, XAxis, YAxis, Cell,
   Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
+import { useTema }    from '../../context/TemaContext'
+import { useFiltros } from '../../context/FiltrosContext'
+import { numeroCompacto, numeroPtBR } from '../../utils/formatos'
 
-/**
- * Gráfico de barras com total de eleitores por estado (UF).
- * A barra de SP é destacada em azul escuro; as demais em azul claro.
- *
- * Permite comparação visual de SP com todos os demais estados do Brasil.
- *
- * @param {{ data: Array<{uf: string, total: number}>, loading: boolean }} props
- */
-export function RegiaoChart({ data, loading }) {
-  if (loading) return <Placeholder />
+export function RegiaoChart({ data }) {
+  const { paleta }     = useTema()
+  const { uf, setUf }  = useFiltros()
+
+  const ufAtiva = uf ?? 'SP'
 
   return (
-    <ResponsiveContainer width="100%" height={420}>
-      <BarChart
-        data={data}
-        margin={{ top: 4, right: 16, left: 16, bottom: 8 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis
-          dataKey="uf"
-          tick={{ fontSize: 11 }}
-          interval={0}
-        />
-        <YAxis
-          tickFormatter={n => `${(n / 1_000_000).toFixed(0)}M`}
-          tick={{ fontSize: 12 }}
-        />
-        <Tooltip
-          formatter={v => [v.toLocaleString('pt-BR'), 'Eleitores']}
-          labelFormatter={uf => `Estado: ${uf}`}
-        />
-        <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-          {data.map((entry, i) => (
-            <Cell
-              key={i}
-              fill={entry.uf === 'SP' ? '#1d4ed8' : '#93c5fd'}
+    <div className="overflow-x-auto">
+      <div className="min-w-[620px]">
+        <ResponsiveContainer width="100%" height={420}>
+          <BarChart data={data} margin={{ top: 4, right: 16, left: 16, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={paleta.grade} />
+            <XAxis
+              dataKey="uf"
+              tick={{ fontSize: 11, fill: paleta.eixo }}
+              interval={0}
+              stroke={paleta.grade}
             />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  )
-}
-
-function Placeholder() {
-  return (
-    <div className="flex items-center justify-center h-[420px] text-gray-400">
-      Carregando...
+            <YAxis
+              tickFormatter={numeroCompacto}
+              tick={{ fontSize: 12, fill: paleta.eixo }}
+              stroke={paleta.grade}
+            />
+            <Tooltip
+              formatter={v => [numeroPtBR(v), 'Eleitores']}
+              labelFormatter={u => `Estado: ${u} — clique para filtrar`}
+              contentStyle={{
+                backgroundColor: paleta.tooltipBg,
+                border: `1px solid ${paleta.borda}`,
+                borderRadius: 8,
+                color: paleta.tooltipTxt,
+              }}
+              labelStyle={{ color: paleta.tooltipTxt, fontWeight: 600 }}
+              cursor={{ fill: paleta.grade, opacity: 0.35 }}
+            />
+            <Bar
+              dataKey="total"
+              radius={[4, 4, 0, 0]}
+              cursor="pointer"
+              onClick={entry => setUf(entry.uf === uf ? null : entry.uf)}
+            >
+              {data.map((entry, i) => (
+                <Cell
+                  key={i}
+                  fill={entry.uf === ufAtiva ? paleta.destaque : paleta.suave}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }

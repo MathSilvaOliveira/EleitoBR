@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -8,23 +10,53 @@
 
 body {
   margin: 0;
-  color: #111827 !important;
 }
 
-h1, h2, h3, h4, p, span, div {
-  color: inherit;
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Transição suave ao alternar tema */
+body, .card, header {
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm
+         border border-gray-200 dark:border-gray-700 p-6;
 }
 
 .chart-title {
-  color: #111827 !important;
-  font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  @apply text-gray-900 dark:text-gray-100 font-semibold text-base mb-1;
 }
 
 .section-title {
-  color: #111827 !important;
-  font-weight: 600;
-  font-size: 1.125rem;
-  margin-bottom: 1rem;
+  @apply text-gray-900 dark:text-gray-100 font-semibold text-lg mb-4;
+}
+
+.chart-subtitle {
+  @apply text-xs text-gray-500 dark:text-gray-400 mb-4;
+}
+
+/* O Recharts marca o <svg> do gráfico com tabindex=0, então clicar nele
+   desenha o outline padrão do navegador. Suprime no clique e mantém o anel
+   na navegação por teclado. */
+.recharts-wrapper:focus,
+.recharts-wrapper :focus {
+  outline: none;
+}
+
+.recharts-wrapper:focus-visible,
+.recharts-wrapper :focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Rótulos sobrepostos ao gráfico não são conteúdo copiável e seriam
+   selecionados junto com o clique. */
+.recharts-wrapper text,
+.rotulo-grafico {
+  user-select: none;
 }

@@ -44,11 +44,34 @@ model EleitoradoPerfil {
   zona           String
   quantidade     Int
 
-  // Unicidade por combinação completa incluindo zona eleitoral —
+  // Unicidade por combinação completa incluindo zona eleitoral
   // cada linha do TSE representa uma zona específica de um município.
   @@unique([municipioId, faixaEtariaId, escolaridadeId, genero, zona])
   @@index([municipioId])
   @@index([faixaEtariaId])
   @@index([escolaridadeId])
   @@index([genero])
+
+  // Índices compostos para os endpoints de cruzamento
+  @@index([faixaEtariaId, genero])
+  @@index([escolaridadeId, faixaEtariaId])
+  @@index([escolaridadeId, genero])
+}
+
+/// Identidade do arquivo do TSE que originou os dados em uso.
+/// O portal publica sempre sob o mesmo nome ("ATUAL"), então sem este
+/// registro não há como saber a qual recorte os números se referem.
+model Importacao {
+  id                Int      @id @default(autoincrement())
+  arquivo           String
+  bytes             BigInt
+  sha256            String
+  baixadoEm         DateTime
+  carregadoEm       DateTime @default(now())
+  linhasLidas       Int
+  registrosGravados Int
+  municipios        Int
+  observacao        String?
+
+  @@index([carregadoEm])
 }
