@@ -1,5 +1,5 @@
 /**
- * ETL — EleitoSP
+ * ETL — EleitoBR
  *
  * Carrega os dados públicos do TSE (Tribunal Superior Eleitoral) sobre o
  * perfil demográfico do eleitorado de todos os estados brasileiros no banco
@@ -23,6 +23,8 @@
  */
 
 import { createReadStream } from 'fs'
+import { stat }             from 'fs/promises'
+import { createHash }       from 'crypto'
 import { parse }            from 'csv-parse'
 import iconv                from 'iconv-lite'
 import { PrismaClient }     from '@prisma/client'
@@ -148,13 +150,41 @@ async function loadBatch(batch) {
   return result.count
 }
 
+/**
+ * Identidade do arquivo de origem.
+ *
+ * O TSE republica o perfil do eleitorado sempre sob o mesmo nome
+ * ("perfil_eleitorado_ATUAL.csv"), de modo que o nome não identifica o
+ * recorte. Gravar tamanho, data de modificação e hash do conteúdo é o que
+ * permite dizer, depois, a qual versão dos dados um número publicado se
+ * refere — condição para reprodutibilidade.
+ */
+async function identificarArquivo(caminho) {
+  const info = await stat(caminho)
+  const hash = createHash('sha256')
+
+  await new Promise((resolve, reject) => {
+    createReadStream(caminho)
+      .on('data', pedaco => hash.update(pedaco))
+      .on('error', reject)
+      .on('end', resolve)
+  })
+
+  return {
+    arquivo:   caminho.split('/').pop(),
+    bytes:     BigInt(info.size),
+    sha256:    hash.digest('hex'),
+    baixadoEm: info.mtime,
+  }
+}
+
 // ─── PIPELINE PRINCIPAL ───────────────────────────────────────────────────────
 
 async function run() {
   const startTime = Date.now()
 
   console.log('╔══════════════════════════════════════════════╗')
-  console.log('║          EleitoSP — ETL iniciado             ║')
+  console.log('║          EleitoBR — ETL iniciado             ║')
   console.log('╚══════════════════════════════════════════════╝')
   console.log(`Arquivo : ${CSV_PATH}`)
   console.log(`Escopo  : todos os estados`)
@@ -333,6 +363,21 @@ async function run() {
       metrics.inseridas += await loadBatch(batch)
     }
 
+    // ── REGISTRO DA ORIGEM ───────────────────────────────────────────────
+    console.log('
+Registrando identidade do arquivo de origem...')
+
+    const origem = await identificarArquivo(CSV_PATH)
+    await prisma.importacao.create({
+      data: {
+        ...origem,
+        linhasLidas:       metrics.lidas,
+        registrosGravados: metrics.inseridas,
+        municipios:        municipioCache.size,
+      },
+    })
+    metrics.origem = origem
+
   } catch (err) {
     console.error('\n[ERRO FATAL]', err.message)
     console.error(err.stack)
@@ -357,6 +402,14 @@ async function run() {
   console.log(`Municípios               : ${municipioCache.size}`)
   console.log(`Faixas etárias           : ${faixaEtariaCache.size}`)
   console.log(`Escolaridades            : ${escolaridadeCache.size}`)
+
+  if (metrics.origem) {
+    console.log(`
+Arquivo de origem        : ${metrics.origem.arquivo}`)
+    console.log(`Tamanho                  : ${metrics.origem.bytes.toLocaleString()} bytes`)
+    console.log(`Modificado em            : ${metrics.origem.baixadoEm.toISOString()}`)
+    console.log(`SHA-256                  : ${metrics.origem.sha256}`)
+  }
 
   if (metrics.warnings.length > 0) {
     console.log(`\n[WARNINGS] — ${metrics.warnings.length} linha(s) descartada(s):`)
