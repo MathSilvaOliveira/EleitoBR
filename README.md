@@ -32,8 +32,9 @@ frontend/src
 │   ├── ui/         ChartCard, InfoTooltip, Skeleton, ErroCarga, ThemeToggle,
 │   │               Segmentado, LinkTela
 │   ├── charts/     Pirâmide etária, Heatmap, Barras empilhadas, Donut, UFs,
-│   │               Escolaridade comparada, Gerações, Faixa a faixa
-│   ├── comparar/   Seletor A/B, abas Visão geral e Idade, resumo e frase-síntese
+│   │               Escolaridade comparada, Gerações, Faixa a faixa,
+│   │               Escolaridade × idade e × gênero comparadas
+│   ├── comparar/   Seletor A/B, abas Visão geral, Idade e Escolaridade e resumo
 │   ├── BuscaMunicipio      Autocomplete de município (FilterBar e Comparar)
 │   ├── FilterBar   Filtros dinâmicos (UF + autocomplete de município)
 │   ├── RankingMunicipios   Tabela de indicadores (IEE, Hiato Instrucional)
@@ -87,7 +88,7 @@ Municípios com menos de 10.000 eleitores são omitidos do ranking por padrão (
 
 ### Comparação de municípios
 
-A tela **Comparar** coloca dois municípios lado a lado (`/comparar?a=&b=`), sempre na mesma escala: em percentual do eleitorado de cada um, por padrão, ou em número de eleitores. As abas **Visão geral** e **Idade** (`?aba=idade`) usam os mesmos dados, carregados uma vez.
+A tela **Comparar** coloca dois municípios lado a lado (`/comparar?a=&b=`), sempre na mesma escala: em percentual do eleitorado de cada um, por padrão, ou em número de eleitores. As abas **Visão geral**, **Idade** (`?aba=idade`) e **Escolaridade** (`?aba=escolaridade`) usam os mesmos dados, carregados uma vez.
 
 - **Idade mediana (estimada)**: o TSE publica a idade em faixas, então a mediana é calculada como em dados agrupados: localiza-se a faixa que contém metade do eleitorado e interpola-se linearmente dentro dela, supondo as idades distribuídas por igual na faixa.
 - **Pirâmide comparada**: faixas de 5 anos, com 15–17 (inclui os alistados aos 15, que votam aos 16) e 18–19 separadas, e topo aberto em 90+.
@@ -95,6 +96,10 @@ A tela **Comparar** coloca dois municípios lado a lado (`/comparar?a=&b=`), sem
 - **Gerações**: até 24 anos (inclui os alistados aos 15), 25 a 44, 45 a 59 e 60 ou mais, sobre os eleitores com idade informada. O IEE segue usando 16–24 para os jovens.
 - **Voto facultativo**: eleitores com até 17 anos ou com 70 anos ou mais, pela idade registrada no cadastro do TSE.
 - **Faixa mais numerosa**: a faixa da pirâmide comparada com mais eleitores.
+- **Baixa instrução**: analfabeto, lê e escreve e fundamental incompleto, a mesma definição usada no Hiato Instrucional.
+- **Médio completo+**: ensino médio completo, superior incompleto e superior completo.
+- **Escolaridade × idade**: participação de cada combinação no eleitorado com escolaridade e idade informadas, em 6 faixas (16–24, 25–34, 35–44, 45–59, 60–74, 75+), com a mesma escala de cor nos dois municípios.
+- **Escolaridade × gênero**: percentual dentro de cada gênero; o rótulo indica o gênero com maior participação no nível quando a diferença passa de 0,3 p.p.
 
 ---
 

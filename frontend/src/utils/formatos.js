@@ -28,7 +28,6 @@ export function comSinal(n, casas = 1) {
 
 const PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e'])
 
-// O TSE grava os nomes em caixa alta; em frase, só as iniciais.
 export function nomeProprio(nome) {
   if (!nome) return nome
   return nome
@@ -66,13 +65,17 @@ const BUCKETS = [
   { rotulo: '75+',   min: 75, max: 200 },
 ]
 
-export const BUCKETS_ROTULOS = BUCKETS.map(b => b.rotulo)
+const BUCKETS_COMPARACAO = [{ rotulo: '16–24', min: 16, max: 24 }, ...BUCKETS.slice(2)]
 
-export function bucketFaixa(codigo) {
+export const BUCKETS_ROTULOS = BUCKETS.map(b => b.rotulo)
+export const BUCKETS_COMPARACAO_ROTULOS = BUCKETS_COMPARACAO.map(b => b.rotulo)
+
+export function bucketFaixa(codigo, comparacao = false) {
   const n = Number(codigo)
   if (!Number.isFinite(n) || n <= 0) return null
   const idadeInicial = Math.floor(n / 100)
-  const b = BUCKETS.find(b => idadeInicial >= b.min && idadeInicial <= b.max)
+  const b = (comparacao ? BUCKETS_COMPARACAO : BUCKETS)
+    .find(b => idadeInicial >= b.min && idadeInicial <= b.max)
   return b?.rotulo ?? null
 }
 

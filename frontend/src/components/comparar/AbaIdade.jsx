@@ -1,7 +1,5 @@
-import { Skeleton }    from '../ui/Primitivas'
 import { LADOS }       from './lados'
 import { CartaoLado }  from './CartaoLado'
-import { FraseIdade }  from './FraseComparacao'
 import { indicadores } from './indicadores'
 import { SecaoPiramide, SecaoResumo, TituloSecao } from './Secoes'
 import { GeracoesChart }    from '../charts/GeracoesChart'
@@ -29,10 +27,6 @@ export function AbaIdade({ lados, pronto, percentual }) {
 
   return (
     <>
-      {pronto
-        ? <FraseIdade a={lados[0]} b={lados[1]} />
-        : <Skeleton altura={72} />}
-
       <SecaoResumo lados={lados} pronto={pronto} indicadores={RESUMO} />
 
       <section>

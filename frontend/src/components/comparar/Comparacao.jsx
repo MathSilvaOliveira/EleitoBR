@@ -1,7 +1,8 @@
 import { usePerfilMunicipio } from '../../hooks/usePerfilMunicipio'
-import { ErroCarga }  from '../ui/Primitivas'
-import { VisaoGeral } from './VisaoGeral'
-import { AbaIdade }   from './AbaIdade'
+import { ErroCarga }       from '../ui/Primitivas'
+import { VisaoGeral }      from './VisaoGeral'
+import { AbaIdade }        from './AbaIdade'
+import { AbaEscolaridade } from './AbaEscolaridade'
 import { nomeProprio } from '../../utils/formatos'
 
 export function Comparacao({ a, b, aba, percentual }) {
@@ -22,7 +23,7 @@ export function Comparacao({ a, b, aba, percentual }) {
     rotulo: l.municipio.nome ? `${nomeProprio(l.municipio.nome)} – ${l.municipio.uf}` : '…',
   }))
 
-  return aba === 'idade'
-    ? <AbaIdade lados={lados} pronto={pronto} percentual={percentual} />
-    : <VisaoGeral lados={lados} pronto={pronto} percentual={percentual} />
+  if (aba === 'idade')        return <AbaIdade lados={lados} pronto={pronto} percentual={percentual} />
+  if (aba === 'escolaridade') return <AbaEscolaridade lados={lados} pronto={pronto} percentual={percentual} />
+  return <VisaoGeral lados={lados} pronto={pronto} percentual={percentual} />
 }

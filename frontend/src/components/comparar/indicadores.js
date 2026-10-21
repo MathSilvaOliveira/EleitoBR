@@ -4,7 +4,7 @@ import {
 
 const emPontos = (v, o) => `${comSinal(v - o)} p.p. vs outro`
 
-export const INDICADORES = {
+const INDICADORES = {
   total: {
     titulo:    'Eleitores',
     formato:   numeroPtBR,
@@ -57,6 +57,28 @@ export const INDICADORES = {
     titulo:    'Voto facultativo',
     formato:   percentualPtBR,
     diferenca: emPontos,
+  },
+  medioOuMais: {
+    titulo:    'Médio completo+',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  baixa: {
+    titulo:    'Baixa instrução',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  analfabetos: {
+    titulo:    'Analfabetos',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  nivelComum: {
+    titulo:    'Nível mais comum',
+    formato:   v => v,
+    diferenca: (v, o) => `outro: ${o}`,
+    selo:      false,
+    texto:     true,
   },
 }
 

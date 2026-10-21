@@ -22,7 +22,8 @@ export function ResumoComparado({ lado, perfil, outro, indicadores }) {
                 {ind.titulo}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-x-2">
-                <p className="text-xl font-bold whitespace-nowrap text-gray-900 dark:text-gray-50">
+                <p className={`${ind.texto ? 'text-base leading-7' : 'text-xl'}
+                               font-bold whitespace-nowrap text-gray-900 dark:text-gray-50`}>
                   {v != null ? ind.formato(v) : '—'}
                 </p>
                 {ind.selo !== false && comparavel && v > o && ind.formato(v) !== ind.formato(o) && (

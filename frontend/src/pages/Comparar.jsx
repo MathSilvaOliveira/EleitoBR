@@ -9,7 +9,7 @@ import { Comparacao }        from '../components/comparar/Comparacao'
 const ABAS = [
   { valor: 'geral',        rotulo: 'Visão geral' },
   { valor: 'idade',        rotulo: 'Idade' },
-  { valor: 'escolaridade', rotulo: 'Escolaridade',  desabilitado: true },
+  { valor: 'escolaridade', rotulo: 'Escolaridade' },
   { valor: 'social',       rotulo: 'Perfil social', desabilitado: true },
 ]
 
