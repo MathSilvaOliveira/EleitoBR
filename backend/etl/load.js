@@ -99,8 +99,8 @@ function transformRow(row) {
   const zona               = row['NR_ZONA']?.trim()
   const faixaCodigo        = row['CD_FAIXA_ETARIA']?.trim()
   const faixaDescricao     = row['DS_FAIXA_ETARIA']?.trim()
-  const escolaridadeCodigo = row['CD_GRAU_INSTRUCAO']?.trim()
-  const escolaridadeDesc   = row['DS_GRAU_INSTRUCAO']?.trim()
+  const escolaridadeCodigo = row['CD_GRAU_ESCOLARIDADE']?.trim()
+  const escolaridadeDesc   = row['DS_GRAU_ESCOLARIDADE']?.trim()
   const generoCodigo       = row['CD_GENERO']?.trim()
   const qtRaw              = row['QT_ELEITORES']?.trim()
 
@@ -363,9 +363,6 @@ async function run() {
       metrics.inseridas += await loadBatch(batch)
     }
 
-    // ── REGISTRO DA ORIGEM ───────────────────────────────────────────────
-    console.log('
-Registrando identidade do arquivo de origem...')
 
     const origem = await identificarArquivo(CSV_PATH)
     await prisma.importacao.create({

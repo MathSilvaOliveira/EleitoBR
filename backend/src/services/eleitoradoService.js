@@ -6,7 +6,6 @@ import {
   UF_EXTERIOR,
 } from '../lib/queryFilters.js'
 
-// ─── RESUMO ──────────────────────────────────────────────────────────────────
 
 export async function getResumo(filters = {}) {
   const temFiltro = Boolean(filters.uf || filters.municipioId || filters.genero)
@@ -49,7 +48,6 @@ export async function getResumo(filters = {}) {
   }
 }
 
-// ─── FAIXA ETÁRIA ─────────────────────────────────────────────────────────────
 
 export async function getFaixaEtaria(filters = {}) {
   const [rows, dimensoes] = await Promise.all([
@@ -79,7 +77,6 @@ function faixaOrd(codigo) {
   return Number.isFinite(n) && n > 0 ? n : Infinity
 }
 
-// ─── GÊNERO ──────────────────────────────────────────────────────────────────
 
 /** @param {{ uf?: string, municipioId?: number }} filters */
 export async function getGenero(filters = {}) {
@@ -96,7 +93,6 @@ export async function getGenero(filters = {}) {
   }))
 }
 
-// ─── ESCOLARIDADE ─────────────────────────────────────────────────────────────
 
 /** @param {{ uf?: string, municipioId?: number }} filters */
 export async function getEscolaridade(filters = {}) {
@@ -121,11 +117,8 @@ export async function getEscolaridade(filters = {}) {
     .sort((a, b) => Number(a.codigo) - Number(b.codigo))
 }
 
-// ─── MUNICÍPIOS (busca leve p/ autocomplete) ─────────────────────────────────
 
 export async function getMunicipios(filters = {}) {
-  // Busca por id serve para reidratar o município vindo da URL — precisa
-  // alcançar também as localidades do exterior, que o filtro padrão exclui.
   if (filters.municipioId) {
     return prisma.municipio.findMany({
       where:  { id: filters.municipioId },
@@ -158,8 +151,6 @@ export async function getMunicipios(filters = {}) {
   })
 }
 
-// ─── RANKING DE MUNICÍPIOS ───────────────────────────────────────────────────
-
 export async function getRankingMunicipios(filters = {}) {
   const whereSql = buildPerfilWhereSql({ uf: filters.uf, genero: filters.genero })
   const limit    = filters.limit ?? 15
@@ -182,8 +173,6 @@ export async function getRankingMunicipios(filters = {}) {
   }))
 }
 
-// ─── REGIÕES (UFs) ────────────────────────────────────────────────────────────
-
 export async function getRegioes(filters = {}) {
   const whereSql = buildPerfilWhereSql({ genero: filters.genero })
 
@@ -202,13 +191,6 @@ export async function getRegioes(filters = {}) {
   }))
 }
 
-// ─── PROCEDÊNCIA DOS DADOS ───────────────────────────────────────────────────
-
-/**
- * Identidade do arquivo do TSE por trás dos números em exibição.
- * bytes é BigInt no banco e vira Number aqui porque BigInt não é
- * serializável em JSON — 2,2 GB cabe folgado em Number.MAX_SAFE_INTEGER.
- */
 export async function getImportacao() {
   const r = await prisma.importacao.findFirst({ orderBy: { carregadoEm: 'desc' } })
   if (!r) return null

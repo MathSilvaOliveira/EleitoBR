@@ -13,6 +13,7 @@ Plataforma web para análise interativa e visualização do perfil demográfico 
 | ORM | Prisma 5 |
 | Banco de dados | PostgreSQL 16 |
 | ETL | Node.js + csv-parse + iconv-lite |
+| Coleta de dados | Python + Selenium |
 | Infraestrutura | Docker + Docker Compose |
 
 ---
@@ -48,6 +49,9 @@ backend/src
 │                   cruzamentoService.js (cruzamentos + indicadores)
 ├── routes/         index.js (validação + delegação, handler DRY)
 └── app.js          middlewares (CORS, request log, erro global)
+
+scripts
+└── baixar_tse.py   Coleta automatizada dos dados do TSE (Python + Selenium)
 ```
 
 Padrão em camadas (MVC adaptado a API): **rotas** validam e delegam, **services** concentram a lógica de dados, o **Prisma/PostgreSQL** persiste. O frontend atua como camada de visualização desacoplada, consumindo a API REST.
@@ -108,8 +112,10 @@ A tela **Comparar** coloca dois municípios lado a lado (`/comparar?a=&b=`), sem
 - [Node.js 20.19.0](https://nodejs.org/en/blog/release/v20.19.0)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - [Git](https://git-scm.com)
+- [Python 3](https://www.python.org/) — para o script de coleta dos dados do TSE
+- [Google Chrome](https://www.google.com/chrome/) — o script de coleta usa Selenium, que controla o navegador real
 
-> **Windows:** instale o Node.js pelo instalador oficial. **Linux:** use o asdf (`.tool-versions` já aponta a versão).
+> **Windows:** instale o Node.js e o Chrome pelos instaladores oficiais. **Linux/WSL:** use o asdf para o Node (`.tool-versions` já aponta a versão) e instale o Chrome no próprio Linux; nesse ambiente o script roda em modo headless (sem janela).
 
 ---
 
@@ -133,9 +139,23 @@ docker compose up --build
 docker compose exec backend npx prisma migrate deploy
 ```
 
-**4. Carregue os dados do TSE**
+**4. Baixe os dados do TSE**
 
-Baixe manualmente o CSV `perfil_eleitorado_ATUAL.csv` no [portal de dados abertos do TSE](https://dadosabertos.tse.jus.br/) (download manual é intencional, por reprodutibilidade acadêmica), salve como `data/eleitorado.csv` na raiz do projeto e rode:
+A coleta é automatizada por um script em Python + Selenium (`scripts/baixar_tse.py`). Ele abre o portal de [dados abertos do TSE](https://dadosabertos.tse.jus.br/), baixa o arquivo nacional do perfil do eleitorado, extrai o consolidado como `data/eleitorado.csv` e arquiva o ZIP original, com a data do download em `data/_raw/`.
+
+```bash
+# WSL / Linux / macOS
+cd scripts
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python baixar_tse.py
+cd ..
+```
+
+> **Windows (PowerShell):** troque a ativação do ambiente por `venv\Scripts\activate`. O ano coletado é configurável na variável `ANO`, no topo de `baixar_tse.py`.
+
+Em seguida, carregue os dados no banco:
 ```bash
 docker compose exec backend node etl/load.js
 ```
@@ -155,9 +175,12 @@ curl "http://localhost:3001/api/exterior"
 
 ## Procedência dos dados
 
-O TSE republica o perfil do eleitorado sempre sob o mesmo nome (`perfil_eleitorado_ATUAL.csv`), de modo que o nome do arquivo não identifica o recorte: o mesmo link devolve números diferentes ao longo do tempo.
+O TSE republica o perfil do eleitorado ao longo do tempo sob o mesmo endereço, de modo que o nome do arquivo não identifica o recorte: o mesmo link devolve números diferentes conforme o cadastro é atualizado, o que é especialmente frequente em ano eleitoral.
 
-Para que os números publicados sejam reproduzíveis, o ETL registra na tabela `Importacao` a identidade do arquivo que originou a carga — nome, tamanho em bytes, data de modificação, SHA-256 do conteúdo, linhas lidas e registros gravados. O dashboard exibe esse recorte no rodapé e a API o expõe em `GET /api/importacao`.
+Para que os números publicados sejam reproduzíveis, dois mecanismos registram a identidade dos dados:
+
+- O script de coleta arquiva cada ZIP baixado em `data/_raw/`, renomeado com a data do download.
+- O ETL grava na tabela `Importacao` a identidade do arquivo que originou a carga, nome, tamanho em bytes, data de modificação, SHA-256 do conteúdo, linhas lidas e registros gravados. O dashboard exibe esse recorte no rodapé e a API o expõe em `GET /api/importacao`.
 
 Conferir se um banco corresponde ao arquivo que você tem em mãos:
 
