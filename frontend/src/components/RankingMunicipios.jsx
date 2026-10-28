@@ -2,7 +2,7 @@ import { useApi }           from '../hooks/useApi'
 import { useParametroUrl }  from '../hooks/useParametroUrl'
 import { useFiltros } from '../context/FiltrosContext'
 import { Skeleton, ErroCarga, InfoTooltip } from './ui/Primitivas'
-import { numeroPtBR } from '../utils/formatos'
+import { numeroPtBR, decimalPtBR, comSinal } from '../utils/formatos'
 
 const COLUNAS = [
   { chave: 'total', rotulo: 'Eleitores' },
@@ -106,9 +106,9 @@ export function RankingMunicipios() {
                   <CelulaBarra valor={l.total} maximo={maximos.total}
                                formato={numeroPtBR} cor="bg-blue-500" />
                   <CelulaBarra valor={l.iee} maximo={maximos.iee}
-                               formato={v => v?.toFixed(2) ?? '—'} cor="bg-violet-500" />
+                               formato={v => decimalPtBR(v, 2)} cor="bg-violet-500" />
                   <CelulaBarra valor={l.hiato} maximo={maximos.hiato}
-                               formato={v => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(1)}` : '—'}
+                               formato={comSinal}
                                cor={l.hiato > 0 ? 'bg-amber-500' : 'bg-emerald-500'} />
                 </tr>
               ))}

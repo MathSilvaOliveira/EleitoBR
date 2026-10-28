@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTema } from '../../context/TemaContext'
 import {
   bucketFaixa, BUCKETS_ROTULOS,
-  abreviaEscolaridade, numeroPtBR,
+  abreviaEscolaridade, numeroPtBR, percentualPtBR,
 } from '../../utils/formatos'
 
 export function HeatmapEscolaridadeFaixa({ data }) {
@@ -89,7 +89,7 @@ export function HeatmapEscolaridadeFaixa({ data }) {
         </div>
         <div className="font-medium text-gray-700 dark:text-gray-300 min-h-4">
           {hover
-            ? `${hover.esc} · ${hover.faixa} anos: ${numeroPtBR(hover.valor)} eleitores (${hover.pct.toFixed(1)}% do total)`
+            ? `${hover.esc} · ${hover.faixa} anos: ${numeroPtBR(hover.valor)} eleitores (${percentualPtBR(hover.pct)} do total)`
             : `Total considerado: ${numeroPtBR(total)} eleitores`}
         </div>
       </div>

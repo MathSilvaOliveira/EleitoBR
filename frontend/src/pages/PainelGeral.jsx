@@ -78,7 +78,7 @@ export function PainelGeral({ navegar }) {
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard
           titulo="Pirâmide Etária do Eleitorado"
-          subtitulo={`Gênero × faixa etária · ${rotuloLocal}`}
+          subtitulo={`Gênero × faixa etária · ${rotuloLocal} · barras de 1 ano até os 20 anos; depois, de 4 ou 5 anos`}
           info="Cruzamento entre gênero e faixa etária. Barras à esquerda: eleitores do gênero masculino; à direita: feminino. A assimetria entre os lados revela a predominância feminina no eleitorado, acentuada nas faixas mais idosas pela maior longevidade das mulheres."
           loading={piramide.loading}
           error={piramide.error}

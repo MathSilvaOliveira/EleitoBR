@@ -2,7 +2,7 @@ import { useApi }     from '../hooks/useApi'
 import { useFiltros } from '../context/FiltrosContext'
 import { useTema }    from '../context/TemaContext'
 import { Skeleton, ErroCarga, InfoTooltip } from './ui/Primitivas'
-import { numeroPtBR, numeroCompacto } from '../utils/formatos'
+import { numeroPtBR, numeroCompacto, percentualPtBR } from '../utils/formatos'
 
 const INFO = `O TSE registra os eleitores residentes fora do Brasil sob o código ZZ. ` +
   `Cada cidade estrangeira com seção eleitoral (em geral, sedes de embaixadas e ` +
@@ -54,7 +54,7 @@ export function ExteriorPanel() {
                     <div className="flex justify-between mb-0.5
                                     text-gray-600 dark:text-gray-300">
                       <span>{rotulo}</span>
-                      <span className="tabular-nums">{pct.toFixed(1)}%</span>
+                      <span className="tabular-nums">{percentualPtBR(pct)}</span>
                     </div>
                     <div className="h-2 rounded bg-gray-100 dark:bg-gray-700">
                       <div className="h-full rounded"
@@ -99,7 +99,7 @@ export function ExteriorPanel() {
                     <span className="w-24 text-right tabular-nums
                                      text-gray-600 dark:text-gray-400">
                       {numeroCompacto(l.total)}
-                      <span className="text-xs text-gray-400 ml-1">({l.pct}%)</span>
+                      <span className="text-xs text-gray-400 ml-1">({percentualPtBR(l.pct)})</span>
                     </span>
                   </div>
                 )
