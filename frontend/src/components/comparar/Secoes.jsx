@@ -1,7 +1,7 @@
 import { CartaoLado }          from './CartaoLado'
 import { ResumoComparado }     from './ResumoComparado'
 import { PiramideEtariaChart } from '../charts/PiramideEtariaChart'
-import { EscolaridadeComparadaChart } from '../charts/EscolaridadeComparadaChart'
+import { BarrasComparadasChart } from '../charts/BarrasComparadasChart'
 import { abreviaEscolaridade } from '../../utils/formatos'
 
 export function TituloSecao({ titulo, subtitulo }) {
@@ -13,10 +13,13 @@ export function TituloSecao({ titulo, subtitulo }) {
   )
 }
 
-export function SecaoResumo({ lados, pronto, indicadores }) {
+export function SecaoResumo({
+  lados, pronto, indicadores,
+  subtitulo = 'o selo indica o maior valor entre os dois municípios',
+}) {
   return (
     <section>
-      <TituloSecao titulo="Resumo" subtitulo="o selo indica o maior valor entre os dois municípios" />
+      <TituloSecao titulo="Resumo" subtitulo={subtitulo} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {lados.map(l => (
           <CartaoLado key={l.lado} lado={l.lado} nome={l.rotulo} loading={!pronto} altura={170}>
@@ -44,52 +47,75 @@ function piramide(perfil, percentual) {
   }))
 }
 
-function escolaridade(perfil, codigo, percentual) {
-  const total = perfil.escolaridade.find(e => e.codigo === codigo)?.total ?? 0
-  return percentual ? (total / perfil.total) * 100 : total
-}
-
-export function SecaoEscolaridade({ lados, pronto, percentual }) {
+/**
+ * Barras por categoria nos dois municípios, com o traço do outro lado.
+ * `categorias(perfil)` devolve [{ codigo, descricao, total }] e `base(perfil)`
+ * é o total sobre o qual o percentual é calculado.
+ */
+export function SecaoBarras({
+  titulo, subtitulo, lados, pronto, percentual,
+  categorias, base, rotulo, altura, ordenadas = true,
+}) {
   const codigos = pronto
-    ? [...new Set(lados.flatMap(l => l.perfil.escolaridade.map(e => e.codigo)))]
+    ? [...new Set(lados.flatMap(l => categorias(l.perfil).map(e => e.codigo)))]
         .sort((x, y) => Number(x) - Number(y))
     : []
   const descricao = c => lados
-    .flatMap(l => l.perfil.escolaridade)
+    .flatMap(l => categorias(l.perfil))
     .find(e => e.codigo === c)?.descricao
+
+  const valor = (perfil, codigo) => {
+    const total = categorias(perfil).find(e => e.codigo === codigo)?.total ?? 0
+    if (!percentual) return total
+    return base(perfil) > 0 ? (total / base(perfil)) * 100 : 0
+  }
 
   const linhas = pronto
     ? lados.map(l => codigos.map(c => ({
         codigo: c,
-        rotulo: abreviaEscolaridade(descricao(c)),
-        valor:  escolaridade(l.perfil, c, percentual),
-        outro:  escolaridade(l.outro, c, percentual),
+        rotulo: rotulo(descricao(c)),
+        valor:  valor(l.perfil, c),
+        outro:  valor(l.outro, c),
       })))
     : []
   const maximo = Math.max(...linhas.flat().flatMap(e => [e.valor, e.outro]), 0)
 
   return (
     <section>
-      <TituloSecao
-        titulo="Escolaridade"
-        subtitulo="barra = este município · traço = o outro, na mesma escala"
-      />
+      <TituloSecao titulo={titulo} subtitulo={subtitulo} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {lados.map((l, i) => (
-          <CartaoLado key={l.lado} lado={l.lado} nome={l.rotulo} loading={!pronto} altura={240}>
+          <CartaoLado key={l.lado} lado={l.lado} nome={l.rotulo} loading={!pronto} altura={altura}>
             {pronto && (
-              <EscolaridadeComparadaChart
+              <BarrasComparadasChart
                 linhas={linhas[i]}
                 maximo={maximo}
                 percentual={percentual}
                 nome={l.nome}
                 nomeOutro={lados[1 - i].nome}
+                ordenadas={ordenadas}
               />
             )}
           </CartaoLado>
         ))}
       </div>
     </section>
+  )
+}
+
+export function SecaoEscolaridade({ lados, pronto, percentual }) {
+  return (
+    <SecaoBarras
+      titulo="Escolaridade"
+      subtitulo="barra = este município · traço = o outro, na mesma escala"
+      lados={lados}
+      pronto={pronto}
+      percentual={percentual}
+      categorias={perfil => perfil.escolaridade}
+      base={perfil => perfil.total}
+      rotulo={abreviaEscolaridade}
+      altura={240}
+    />
   )
 }
 

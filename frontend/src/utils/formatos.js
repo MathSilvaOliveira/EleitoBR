@@ -55,6 +55,33 @@ export function abreviaEscolaridade(descricao) {
   return ESCOLARIDADE_ABREV[descricao?.toUpperCase()] ?? descricao
 }
 
+const ESTADO_CIVIL_ROTULO = {
+  'SOLTEIRO':               'Solteiro(a)',
+  'CASADO':                 'Casado(a)',
+  'VIÚVO':                  'Viúvo(a)',
+  'SEPARADO JUDICIALMENTE': 'Separado(a) jud.',
+  'DIVORCIADO':             'Divorciado(a)',
+  'NÃO INFORMADO':          'Não informado',
+}
+
+export function rotuloEstadoCivil(descricao) {
+  return ESTADO_CIVIL_ROTULO[descricao?.toUpperCase()] ?? descricao
+}
+
+// O TSE grafa raça/cor ora em maiúsculas, ora não, conforme o arquivo.
+const RACA_COR_ROTULO = {
+  'BRANCA':        'Branca',
+  'PRETA':         'Preta',
+  'PARDA':         'Parda',
+  'AMARELA':       'Amarela',
+  'INDÍGENA':      'Indígena',
+  'NÃO INFORMADO': 'Não informado',
+}
+
+export function rotuloRacaCor(descricao) {
+  return RACA_COR_ROTULO[descricao?.toUpperCase()] ?? descricao
+}
+
 const BUCKETS = [
   { rotulo: '16–17', min: 16, max: 17 },
   { rotulo: '18–24', min: 18, max: 24 },

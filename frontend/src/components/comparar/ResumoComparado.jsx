@@ -4,6 +4,9 @@ import { LADOS } from './lados'
 const MIN_ELEITORES = 10_000
 
 export function ResumoComparado({ lado, perfil, outro, indicadores }) {
+  const instavel = perfil.total < MIN_ELEITORES
+    && indicadores.some(ind => ind.chave === 'iee' || ind.chave === 'hiato')
+
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -41,7 +44,7 @@ export function ResumoComparado({ lado, perfil, outro, indicadores }) {
         })}
       </div>
 
-      {perfil.total < MIN_ELEITORES && (
+      {instavel && (
         <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
           ⚠ Menos de 10 mil eleitores: IEE e hiato ficam instáveis, por isso este
           município não entra no ranking.

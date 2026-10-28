@@ -8,6 +8,13 @@ import prisma from '../src/lib/prisma.js'
  *  BETA   (SP) total 2000 | jovens  800, idosos 400 → IEE 0.50 | baixa 1200, sup 800 → hiato +20.0
  *  GAMA   (RJ) total  500 | jovens    0, idosos   0 → IEE nulo | baixa    0, sup   0 → hiato   0.0
  *  LISBOA (ZZ) total 1000 — exterior, fora dos agregados nacionais
+ *
+ * Perfil social, com os mesmos totais por gênero (GAMA fica sem linhas, como
+ * um banco antes da carga social):
+ *  ALFA   solteiros 500, casados 500 | raça/cor não inf. 500, branca 300, parda 200
+ *         quilombolas 200, não 300, não inf. 500 | biometria 900, deficiência 20, nome social 2
+ *  BETA   2000 solteiros, pardos e não quilombolas | biometria 1000
+ *  LISBOA 1000 solteiros — exterior
  */
 export const ESPERADO = {
   totalBrasil:     3500,
@@ -36,9 +43,12 @@ export async function seed() {
 
   await prisma.importacao.deleteMany()
   await prisma.eleitoradoPerfil.deleteMany()
+  await prisma.perfilSocial.deleteMany()
   await prisma.municipio.deleteMany()
   await prisma.faixaEtaria.deleteMany()
   await prisma.escolaridade.deleteMany()
+  await prisma.estadoCivil.deleteMany()
+  await prisma.racaCor.deleteMany()
 
   const alfa   = await prisma.municipio.create({ data: { codigo: '0001', nome: 'ALFA',   uf: 'SP' } })
   const beta   = await prisma.municipio.create({ data: { codigo: '0002', nome: 'BETA',   uf: 'SP' } })
@@ -85,6 +95,42 @@ export async function seed() {
       genero,
       zona:           '0001',
       quantidade,
+    })),
+  })
+
+  const solteiro = await prisma.estadoCivil.create({ data: { codigo: '1', descricao: 'SOLTEIRO' } })
+  const casado   = await prisma.estadoCivil.create({ data: { codigo: '3', descricao: 'CASADO' } })
+
+  const naoInf = await prisma.racaCor.create({ data: { codigo: '-1', descricao: 'NÃO INFORMADO' } })
+  const branca = await prisma.racaCor.create({ data: { codigo: '1',  descricao: 'Branca' } })
+  const parda  = await prisma.racaCor.create({ data: { codigo: '3',  descricao: 'Parda' } })
+
+  // município, estado civil, raça/cor, quilombola, gênero, eleitores, biometria, deficiência, nome social
+  const sociais = [
+    [alfa,   solteiro, branca, 'N',  'M',  300, 300, 10, 0],
+    [alfa,   solteiro, naoInf, 'NI', 'M',  200, 150,  0, 0],
+    [alfa,   casado,   parda,  'S',  'F',  200, 200, 10, 2],
+    [alfa,   casado,   naoInf, 'NI', 'F',  300, 250,  0, 0],
+
+    [beta,   solteiro, parda,  'N',  'M',  600, 300,  0, 0],
+    [beta,   solteiro, parda,  'N',  'F', 1400, 700,  0, 0],
+
+    [lisboa, solteiro, naoInf, 'NI', 'M',  300, 300,  0, 0],
+    [lisboa, solteiro, naoInf, 'NI', 'F',  700, 700,  0, 0],
+  ]
+
+  await prisma.perfilSocial.createMany({
+    data: sociais.map(([municipio, estadoCivil, racaCor, quilombola, genero,
+                        quantidade, comBiometria, comDeficiencia, comNomeSocial]) => ({
+      municipioId:   municipio.id,
+      estadoCivilId: estadoCivil.id,
+      racaCorId:     racaCor.id,
+      quilombola,
+      genero,
+      quantidade,
+      comBiometria,
+      comDeficiencia,
+      comNomeSocial,
     })),
   })
 

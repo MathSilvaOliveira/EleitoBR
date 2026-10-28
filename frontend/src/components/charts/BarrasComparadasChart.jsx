@@ -2,7 +2,8 @@ import { useTema } from '../../context/TemaContext'
 import { numeroCompacto, percentualPtBR } from '../../utils/formatos'
 import { escalaLinear } from '../../utils/estatisticas'
 
-export function EscolaridadeComparadaChart({ linhas, maximo, percentual, nome, nomeOutro }) {
+// O degradê acompanha categorias com ordem (escolaridade); sem ordem, cor única.
+export function BarrasComparadasChart({ linhas, maximo, percentual, nome, nomeOutro, ordenadas = true }) {
   const { paleta } = useTema()
   const { topo, marcas } = escalaLinear(maximo, 4)
 
@@ -11,6 +12,7 @@ export function EscolaridadeComparadaChart({ linhas, maximo, percentual, nome, n
   const posicao    = v => `${(v / topo) * 100}%`
 
   const cor = i => {
+    if (!ordenadas) return paleta.primaria
     const t = linhas.length > 1 ? i / (linhas.length - 1) : 0
     return `color-mix(in srgb, ${paleta.acento} ${Math.round(t * 100)}%, ${paleta.primaria})`
   }

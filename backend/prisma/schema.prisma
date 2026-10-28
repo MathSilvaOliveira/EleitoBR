@@ -8,11 +8,12 @@ datasource db {
 }
 
 model Municipio {
-  id     Int    @id @default(autoincrement())
-  codigo String @unique
-  nome   String
-  uf     String
-  perfis EleitoradoPerfil[]
+  id            Int    @id @default(autoincrement())
+  codigo        String @unique
+  nome          String
+  uf            String
+  perfis        EleitoradoPerfil[]
+  perfisSociais PerfilSocial[]
 
   // Índice em uf para consultas de comparação entre estados (ex.: SP vs RJ)
   @@index([uf])
@@ -56,6 +57,41 @@ model EleitoradoPerfil {
   @@index([faixaEtariaId, genero])
   @@index([escolaridadeId, faixaEtariaId])
   @@index([escolaridadeId, genero])
+}
+
+model EstadoCivil {
+  id        Int    @id @default(autoincrement())
+  codigo    String @unique
+  descricao String
+  perfis    PerfilSocial[]
+}
+
+model RacaCor {
+  id        Int    @id @default(autoincrement())
+  codigo    String @unique
+  descricao String
+  perfis    PerfilSocial[]
+}
+
+/// Estado civil, raça/cor e grupos específicos do eleitorado, por município e
+/// gênero. Fica fora de EleitoradoPerfil porque a granularidade é outra: cruzar
+/// estas dimensões com zona, idade e escolaridade multiplicaria as linhas à toa.
+model PerfilSocial {
+  id             Int         @id @default(autoincrement())
+  municipio      Municipio   @relation(fields: [municipioId], references: [id])
+  municipioId    Int
+  estadoCivil    EstadoCivil @relation(fields: [estadoCivilId], references: [id])
+  estadoCivilId  Int
+  racaCor        RacaCor     @relation(fields: [racaCorId], references: [id])
+  racaCorId      Int
+  quilombola     String      // 'S', 'N' ou 'NI' (não informado)
+  genero         String
+  quantidade     Int
+  comBiometria   Int
+  comDeficiencia Int
+  comNomeSocial  Int
+
+  @@unique([municipioId, estadoCivilId, racaCorId, quilombola, genero])
 }
 
 /// Identidade do arquivo do TSE que originou os dados em uso.

@@ -10,7 +10,7 @@ const ABAS = [
   { valor: 'geral',        rotulo: 'Visão geral' },
   { valor: 'idade',        rotulo: 'Idade' },
   { valor: 'escolaridade', rotulo: 'Escolaridade' },
-  { valor: 'social',       rotulo: 'Perfil social', desabilitado: true },
+  { valor: 'social',       rotulo: 'Perfil social' },
 ]
 
 const ABAS_ATIVAS = ABAS.filter(o => !o.desabilitado).map(o => o.valor)

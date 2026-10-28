@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import * as service     from '../services/eleitoradoService.js'
 import * as cruzamentos from '../services/cruzamentoService.js'
+import * as social      from '../services/perfilSocialService.js'
 import { parseFilters } from '../lib/queryFilters.js'
 
 const router = Router()
@@ -42,6 +43,9 @@ router.get('/cruzamentos/escolaridade-faixa', handler(f =>
 
 router.get('/cruzamentos/escolaridade-genero', handler(f =>
   cruzamentos.getEscolaridadePorGenero(f)))
+
+// ── Perfil social ──────────────────────────────────────────────────────────
+router.get('/perfil-social', handler(f => social.getPerfilSocial(f)))
 
 // ── Indicadores originais ──────────────────────────────────────────────────
 router.get('/indicadores/municipios', handler((f, req) => {

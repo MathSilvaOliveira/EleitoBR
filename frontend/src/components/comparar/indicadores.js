@@ -80,6 +80,36 @@ const INDICADORES = {
     selo:      false,
     texto:     true,
   },
+  casados: {
+    titulo:    'Casados',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  declararamRaca: {
+    titulo:    'Declararam raça/cor',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  quilombolas: {
+    titulo:    'Quilombolas',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  deficiencia: {
+    titulo:    'Com deficiência',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
+  nomeSocial: {
+    titulo:    'Nome social',
+    formato:   v => percentualPtBR(v, 2),
+    diferenca: (v, o) => `${comSinal(v - o, 2)} p.p. vs outro`,
+  },
+  biometria: {
+    titulo:    'Com biometria',
+    formato:   percentualPtBR,
+    diferenca: emPontos,
+  },
 }
 
 export const indicadores = (...chaves) => chaves.map(chave => ({ chave, ...INDICADORES[chave] }))

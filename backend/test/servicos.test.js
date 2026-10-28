@@ -5,6 +5,7 @@ import prisma            from '../src/lib/prisma.js'
 import { seed, ESPERADO } from './seed.js'
 import * as eleitorado    from '../src/services/eleitoradoService.js'
 import * as cruzamentos   from '../src/services/cruzamentoService.js'
+import * as social        from '../src/services/perfilSocialService.js'
 
 let municipios
 
@@ -253,5 +254,43 @@ describe('busca de município por nome', () => {
   it('trata % e _ como texto, não como curinga', async () => {
     assert.deepEqual(await nomes({ q: '%' }), [])
     assert.deepEqual(await nomes({ q: '_' }), [])
+  })
+})
+
+describe('perfil social', () => {
+  const totais = linhas => Object.fromEntries(linhas.map(l => [l.codigo, l.total]))
+
+  it('soma as dimensões e contagens de um município', async () => {
+    const r = await social.getPerfilSocial({ municipioId: municipios.alfa.id })
+    assert.equal(r.total,          1000)
+    assert.equal(r.comBiometria,   900)
+    assert.equal(r.comDeficiencia, 20)
+    assert.equal(r.comNomeSocial,  2)
+    assert.deepEqual(r.quilombola, { S: 200, N: 300, NI: 500 })
+    assert.deepEqual(totais(r.estadoCivil), { 1: 500, 3: 500 })
+    assert.deepEqual(totais(r.racaCor), { '-1': 500, 1: 300, 3: 200 })
+  })
+
+  it('ordena as categorias pelo código do TSE, com não informado (-1) primeiro', async () => {
+    const r = await social.getPerfilSocial({ municipioId: municipios.alfa.id })
+    assert.deepEqual(r.racaCor.map(c => c.descricao), ['NÃO INFORMADO', 'Branca', 'Parda'])
+  })
+
+  it('deixa o exterior fora do total nacional', async () => {
+    // ALFA 1000 + BETA 2000; GAMA não tem linhas sociais e LISBOA é exterior.
+    assert.equal((await social.getPerfilSocial()).total, 3000)
+  })
+
+  it('aplica os filtros de UF e gênero como as demais consultas', async () => {
+    const r = await social.getPerfilSocial({ uf: 'SP', genero: 'F' })
+    assert.equal(r.total, ESPERADO.spF)
+  })
+
+  it('devolve zeros, e não erro, para município sem dados sociais', async () => {
+    const r = await social.getPerfilSocial({ municipioId: municipios.gama.id })
+    assert.equal(r.total, 0)
+    assert.deepEqual(r.quilombola, { S: 0, N: 0, NI: 0 })
+    assert.deepEqual(r.estadoCivil, [])
+    assert.deepEqual(r.racaCor, [])
   })
 })
