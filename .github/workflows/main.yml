@@ -1,4 +1,4 @@
-name: CI — EleitoSP
+name: CI — EleitoBR
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: eleitosp_test
+          POSTGRES_DB: eleitobr_test
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -44,23 +44,23 @@ jobs:
       - name: Gerar Prisma Client
         working-directory: backend
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eleitosp_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eleitobr_test
         run: npx prisma generate
 
       - name: Rodar migrations
         working-directory: backend
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eleitosp_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eleitobr_test
         run: npx prisma migrate deploy
 
       - name: Rodar testes
         working-directory: backend
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eleitosp_test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eleitobr_test
         run: npm test
 
   frontend:
-    name: Frontend — build
+    name: Frontend — lint e build
     runs-on: ubuntu-latest
 
     steps:
@@ -77,6 +77,10 @@ jobs:
       - name: Instalar dependências
         working-directory: frontend
         run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
 
       - name: Build de produção
         working-directory: frontend

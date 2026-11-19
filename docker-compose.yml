@@ -1,25 +1,26 @@
 services:
   db:
     image: postgres:16
-    container_name: eleitosp_db
+    container_name: eleitobr_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: eleitosp
+      POSTGRES_DB: eleitobr
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "5434:5432"
+      - "5555:5555"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
   backend:
     build: ./backend
-    container_name: eleitosp_backend
+    container_name: eleitobr_backend
     restart: unless-stopped
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/eleitosp
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/eleitobr
       PORT: 3001
     ports:
       - "3001:3001"
@@ -30,7 +31,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: eleitosp_frontend
+    container_name: eleitobr_frontend
     restart: unless-stopped
     depends_on:
       - backend
